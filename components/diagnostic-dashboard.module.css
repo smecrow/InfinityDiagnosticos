@@ -1,0 +1,627 @@
+.loadingScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: #0a0a0a;
+  backdrop-filter: blur(28px);
+  transition:
+    opacity 0.6s ease,
+    visibility 0.6s ease;
+}
+
+.loadingScreenHidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loadingBackdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05), transparent 30%),
+    radial-gradient(circle at 80% 24%, rgba(249, 181, 46, 0.05), transparent 22%);
+  animation: pulseBackdrop 4.5s ease-in-out infinite;
+}
+
+.loadingPanel {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 620px);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  text-align: center;
+  animation: riseIn 0.8s ease;
+}
+
+.loadingPanel::before {
+  content: none;
+}
+
+.loadingLogo {
+  width: min(340px, 78vw);
+  height: auto;
+  margin: 0 auto 16px;
+  animation: floatLogo 2.8s ease-in-out infinite;
+}
+
+.loadingKicker {
+  margin: 0 0 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.loadingTitleViewport {
+  overflow: hidden;
+  min-height: 8.8rem;
+}
+
+.loadingTitle {
+  margin: 0;
+  font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+  min-height: 2.4em;
+  animation:
+    loadingLogSwap 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    textGlow 1.2s ease-in-out infinite alternate;
+  font-family: "Inter", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+}
+
+.loadingDescription {
+  margin: 16px auto 24px;
+  max-width: 42ch;
+  color: var(--muted);
+  letter-spacing: 1px;
+  line-height: 1.9;
+}
+
+.loadingBar {
+  width: 100%;
+  height: 4px;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.loadingBarFill {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(214, 138, 34, 0.92) 0%, rgba(249, 181, 46, 0.98) 45%, rgba(255, 225, 163, 0.96) 100%);
+  background-size: 200% 100%;
+  box-shadow:
+    0 0 14px rgba(249, 181, 46, 0.22),
+    0 0 28px rgba(214, 138, 34, 0.12);
+  animation:
+    loadingProgress 3.2s ease-in-out forwards,
+    loadingBarShift 1.8s linear infinite;
+}
+
+.loadingBarFill::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 236, 188, 0.9) 0%, rgba(249, 181, 46, 0.5) 48%, rgba(249, 181, 46, 0) 75%);
+  transform: translate(40%, -50%);
+  animation: pulseEdge 1.8s ease-in-out infinite;
+}
+
+.page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 56px 24px 80px;
+  display: flex;
+  align-items: flex-start;
+  gap: 120px;
+  opacity: 0;
+  transform: translateY(24px) scale(0.985);
+  transition:
+    opacity 0.7s ease,
+    transform 0.8s ease;
+}
+
+.pageVisible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.hero,
+.resultsCard {
+  position: relative;
+  overflow: visible;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: riseIn 0.9s ease both;
+}
+
+.hero::after,
+.resultsCard::after {
+  content: none;
+}
+
+.hero {
+  flex: 0 1 420px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  min-height: auto;
+}
+
+.hero::before,
+.resultsCard::before {
+  content: none;
+}
+
+.brandRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.logo {
+  width: 300px;
+  height: auto;
+}
+
+.brandMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.kicker {
+  margin: 0;
+  color: #b3b3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.rule {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+}
+
+.heroCopy {
+  max-width: 560px;
+}
+
+.heroLead {
+  margin: 0 0 18px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.title {
+  margin: 0 0 32px;
+  font-family: "Inter", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 3rem;
+  line-height: 1.2;
+  max-width: 10ch;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+}
+
+.description {
+  margin: 0 0 48px;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.6;
+  max-width: 46ch;
+}
+
+.summaryRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.summaryCard {
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: tileReveal 0.6s ease forwards;
+}
+
+.summaryLabel {
+  display: block;
+  margin-bottom: 14px;
+  color: #a0a0a0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+}
+
+.summaryValue {
+  display: block;
+  font-family: "Inter", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
+.statusPanel {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.statusHeaderLabel {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.statusHeaderLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: slideIn 0.55s ease forwards;
+  color: #d9d9de;
+}
+
+.statusItem + .statusItem {
+  margin-top: 16px;
+}
+
+.statusDot,
+.statusDotDone {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.statusDot {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.statusDotDone {
+  background: var(--accent);
+  box-shadow: 0 0 0 6px rgba(249, 181, 46, 0.05);
+  animation: pulseDot 1.6s ease-in-out infinite;
+}
+
+.resultsCard {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.cardEyebrow {
+  margin: 0 0 8px;
+  color: #8d8d94;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: clamp(2.3rem, 3vw, 3.4rem);
+  letter-spacing: -0.06em;
+  font-weight: 700;
+}
+
+.liveBadge {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 0.88rem;
+  white-space: nowrap;
+  animation: pulseBadge 2.2s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.dataTile {
+  padding: 24px;
+  border-radius: 12px;
+  border: none;
+  background: #171717;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: tileReveal 0.55s ease forwards;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.dataTile:hover {
+  transform: translateY(-4px);
+  background: #171717;
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.18);
+}
+
+.dataLabel {
+  display: block;
+  color: #a3a3a3;
+  font-size: 12px;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.dataValue {
+  display: block;
+  font-family: "Inter", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+}
+
+.notice {
+  margin-top: 22px;
+  padding: 24px 24px;
+  border-left: 2px solid rgba(249, 181, 46, 0.24);
+  background: rgba(255, 255, 255, 0.018);
+  border-radius: 18px;
+  color: var(--muted);
+  line-height: 1.75;
+  animation: riseIn 0.8s ease 0.9s both;
+}
+
+@keyframes pulseBackdrop {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+@keyframes floatLogo {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes textGlow {
+  from {
+    text-shadow: 0 0 0 rgba(31, 143, 255, 0);
+  }
+
+  to {
+    text-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
+  }
+}
+
+@keyframes loadingLogSwap {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes loadingProgress {
+  from {
+    transform: scaleX(0.08);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes loadingBarShift {
+  from {
+    background-position: 0% 50%;
+  }
+
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes tileReveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 6px rgba(249, 181, 46, 0.08);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(249, 181, 46, 0.06);
+  }
+}
+
+@keyframes pulseEdge {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate(40%, -50%) scale(0.9);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: translate(40%, -50%) scale(1.08);
+  }
+}
+
+@keyframes pulseBadge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes driftGlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(-14px, -10px, 0);
+  }
+}
+
+@media (max-width: 980px) {
+  .page {
+    flex-direction: column;
+    gap: 40px;
+    padding: 32px 18px 48px;
+  }
+
+  .hero {
+    flex-basis: auto;
+  }
+
+  .summaryRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .brandRow {
+    flex-direction: column;
+  }
+
+  .logo {
+    width: 220px;
+  }
+
+  .brandMeta {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+  }
+
+  .loadingPanel {
+    padding: 20px;
+    border-radius: 12px;
+  }
+}
