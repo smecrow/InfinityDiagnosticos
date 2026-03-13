@@ -26,6 +26,7 @@
 - A estratégia de medição de throughput foi reforçada para links rápidos, com cargas maiores e requisições paralelas, reduzindo a subestimativa observada em conexões de 1 Gbps.
 - Foi adicionado um script PowerShell para executar o bootstrap do PostgreSQL no Windows com `psql.exe`, aproveitando a instalacao local detectada.
 - O script PowerShell de bootstrap do PostgreSQL foi corrigido para evitar conflito com a variavel automatica `$Host` do PowerShell.
+- O repositorio local foi sincronizado com `origin/main` no commit `403eeef`, incorporando o fluxo Docker local com `docker-compose`, imagens separadas para frontend e backend e a documentacao do `server-id` `35474` do speedtest da InfinityGO.
 - O arquivo foi criado para iniciar o acompanhamento das atividades no repositório.
 - Foi executada uma tarefa operacional para listar as skills instaláveis via `skill-installer`.
 - Foram instaladas as skills `imagegen`, `render-deploy` e `vercel-deploy`.
@@ -57,6 +58,9 @@
 
 ### Status atual
 
+- A copia local esta alinhada com `origin/main` no commit `403eeef` apos `git fetch` seguido de `fast-forward` da branch `main`.
+- O projeto agora inclui um fluxo local via Docker com `postgres`, `backend` e `frontend` descrito em `docker-compose.yml` e parametrizado por `.env.docker.example`.
+- A raiz do repositorio tambem documenta o `server-id` confirmado da InfinityGO para o speedtest da Ookla em `speedtest.txt`.
 - O repositorio agora contem um backend Spring Boot funcional em `backend/`, preparado para evoluir a persistencia e o painel administrativo.
 - O frontend agora fecha o fluxo ponta a ponta localmente, coletando os dados do navegador e tentando persistir o payload real no backend assim que a tela carrega.
 - A interface passou a exibir o estado de persistencia do diagnostico, diferenciando envio em andamento, sucesso e falha de comunicacao com a API.
@@ -106,6 +110,13 @@
 ### Arquivos modificados
 
 - `codex-progress.md`
+- `.env.docker.example`
+- `.dockerignore`
+- `Dockerfile.frontend`
+- `docker-compose.yml`
+- `STATUS.md`
+- `speedtest.txt`
+- `stop-project-windows.bat`
 - `.env.example`
 - `.gitignore`
 - `diagnostic-data-catalog.md`
@@ -127,6 +138,8 @@
 - `run-next-dev.bat`
 - `run-project-windows.bat`
 - `backend/.env`
+- `backend/.dockerignore`
+- `backend/Dockerfile`
 - `backend/run-backend-dev.cmd`
 - `backend/mvnw`
 - `backend/mvnw.cmd`
@@ -164,6 +177,8 @@
 
 ### Próximos passos recomendados
 
+- Validar localmente o fluxo `docker compose up --build` com as variaveis copiadas de `.env.docker.example`, confirmando frontend em `localhost:3000` e backend em `localhost:8080`.
+- Decidir se o `server-id` `35474` documentado em `speedtest.txt` deve permanecer apenas como referencia operacional ou ser fixado no fluxo do site, Worker ou backend.
 - Se desejar testes manuais com ambientes diferentes, criar tambem um arquivo de environment do Postman separado para dev, homologacao e producao.
 - Substituir `ddl-auto: update` por migracoes versionadas antes de subir o backend em ambiente compartilhado.
 - Se for usar banco real, configurar o IntelliJ ou a execucao com `SPRING_PROFILES_ACTIVE=postgres` e as variaveis `DATABASE_URL`, `DATABASE_USERNAME` e `DATABASE_PASSWORD`.

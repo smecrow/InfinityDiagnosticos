@@ -1,17 +1,18 @@
 1. Última atualização
-2026-03-13 - Referência do servidor Ookla da InfinityGO Telecom documentada na raiz do projeto, com `server-id` confirmado e comandos prontos para uso em CLI.
+2026-03-13 - Scripts Linux/WSL criados, validados com `bash -n` e sincronizados para `/home/smecrow/InfinityGoTestSite` com permissão de execução.
 
 2. Estado da sessão
-encerrada limpa - Anotação revisada, sem alterar a implementação do speedtest no código; próximo passo opcional é fixar o `server-id` dentro do fluxo do site.
+encerrada limpa - O projeto agora tem launchers próprios para WSL/Linux para subir e parar o stack Docker sem depender dos `.bat` de Windows.
 
 3. Arquivos tocados
-speedtest.txt: referência operacional do servidor Ookla da InfinityGO Telecom, incluindo `server-id 35474`
-STATUS.md: contexto atualizado da sessão
+STATUS.md: contexto final da criação dos scripts Linux/WSL
+run-project-wsl.sh: launcher shell para subir o projeto com Docker Compose no WSL
+stop-project-wsl.sh: launcher shell para desligar o stack Docker no WSL
 
 4. Próximos passos
-Se quiser automatizar o uso do servidor da InfinityGO no site, localizar o ponto da implementação atual onde o provedor de teste é escolhido.
-Revalidar o `server-id` antes de colocar isso em produção, porque a listagem da Ookla pode mudar no futuro.
-Se o objetivo for backend ou Worker, decidir se a seleção fixa do servidor será feita no frontend, no Worker ou em um serviço dedicado.
+Usar `./run-project-wsl.sh` em `/home/smecrow/InfinityGoTestSite` para subir frontend, backend e PostgreSQL no WSL.
+Usar `./stop-project-wsl.sh` na mesma pasta para derrubar os containers quando terminar.
+Decidir depois se os `.bat` de Windows permanecem na raiz como compatibilidade ou se podem ser removidos.
 
 5. Decisões pendentes
-Definir se o projeto deve apenas documentar o `server-id` ou já forçar a seleção do servidor da InfinityGO na implementação atual.
+Definir se você quer que eu também adapte a documentação do projeto para apontar explicitamente os novos scripts `.sh`.
