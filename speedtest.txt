@@ -1,0 +1,23 @@
+Referência de Speedtest CLI - InfinityGO Telecom
+
+Última verificação:
+- 2026-03-13
+
+Servidor confirmado na listagem pública da Ookla:
+- sponsor: InfinityGO Telecom
+- cidade: Caldas Novas/GO
+- host: speedtest.infinitygo.com.br.prod.hosts.ooklaserver.net:8080
+- server-id: 35474
+
+Comando no Ookla Speedtest CLI oficial:
+- speedtest --server-id=35474
+
+Comando no speedtest-cli legado em Python:
+- speedtest-cli --server 35474
+
+Consultas usadas para confirmação:
+- https://www.speedtest.net/api/js/servers?engine=js&https_functional=true&limit=100&search=InfinityGO
+- https://www.speedtest.net/api/js/servers?engine=js&https_functional=true&limit=100&search=Caldas%20Novas
+
+Observação:
+- Se a Ookla alterar o cadastro do servidor no futuro, o `server-id` pode mudar. Revalidar nessas duas URLs antes de automatizar em produção.
