@@ -1,0 +1,7 @@
+target
+.idea
+.env
+src/test
+postman
+scripts
+run-backend-dev.cmd

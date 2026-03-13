@@ -1,0 +1,17 @@
+.git
+.next
+node_modules
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend
+cloudflare-speedtest
+coverage
+dist
+codex-progress.md
+diagnostic-data-catalog.md
+architecture-stack.md
+README.md
+STATUS.md

@@ -401,6 +401,27 @@ function buildCacheBustToken(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      signal.removeEventListener("abort", abortHandler);
+      resolve();
+    }, delayMs);
+
+    const abortHandler = () => {
+      window.clearTimeout(timeoutId);
+      reject(new DOMException("Operação cancelada", "AbortError"));
+    };
+
+    if (signal.aborted) {
+      abortHandler();
+      return;
+    }
+
+    signal.addEventListener("abort", abortHandler, { once: true });
+  });
+}
+
 function readSpeedTestMetadata(response: Response): { provider: string | null; region: string | null } {
   return {
     provider: getHeaderText(response.headers.get("x-speedtest-provider")),
@@ -659,6 +680,35 @@ async function persistDiagnostic(payload: DiagnosticPayload, signal: AbortSignal
   return (await response.json()) as DiagnosticCreatedResponse;
 }
 
+async function persistDiagnosticWithRetry(
+  payload: DiagnosticPayload,
+  signal: AbortSignal
+): Promise<DiagnosticCreatedResponse> {
+  const maxAttempts = 8;
+  const retryDelayMs = 2000;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await persistDiagnostic(payload, signal);
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw error;
+      }
+
+      lastError = error;
+
+      if (attempt === maxAttempts) {
+        throw lastError;
+      }
+
+      await waitForDelay(retryDelayMs, signal);
+    }
+  }
+
+  throw lastError ?? new Error("Falha ao persistir diagnóstico.");
+}
+
 async function persistSpeedTestResult(
   diagnosticId: string,
   payload: SpeedTestPayload,
@@ -703,7 +753,7 @@ export default function DiagnosticDashboard() {
     setData(collectedDiagnostic.display);
     setPersistenceState("saving");
 
-    persistDiagnostic(collectedDiagnostic.payload, abortController.signal)
+    persistDiagnosticWithRetry(collectedDiagnostic.payload, abortController.signal)
       .then((response) => {
         setDiagnosticId(response.id);
         setPersistenceState("saved");
@@ -838,9 +888,15 @@ export default function DiagnosticDashboard() {
       }
 
       setSpeedTestState("error");
-      setSpeedTestHint(
-        "Não foi possível concluir o speedtest. Verifique o endpoint configurado em NEXT_PUBLIC_SPEEDTEST_BASE_URL e tente novamente."
-      );
+      if (error instanceof Error && error.message.startsWith("Falha ao persistir speedtest")) {
+        setSpeedTestHint(
+          "O speedtest foi concluído, mas não foi possível salvar o resultado no backend. Verifique a API configurada em NEXT_PUBLIC_API_BASE_URL e tente novamente."
+        );
+      } else {
+        setSpeedTestHint(
+          "Não foi possível concluir o speedtest. Verifique o endpoint configurado em NEXT_PUBLIC_SPEEDTEST_BASE_URL e tente novamente."
+        );
+      }
     } finally {
       speedTestControllerRef.current = null;
     }
