@@ -321,7 +321,8 @@
 }
 
 .statusDot,
-.statusDotDone {
+.statusDotDone,
+.statusDotError {
   width: 10px;
   height: 10px;
   border-radius: 999px;
@@ -336,6 +337,26 @@
   background: var(--accent);
   box-shadow: 0 0 0 6px rgba(249, 181, 46, 0.05);
   animation: pulseDot 1.6s ease-in-out infinite;
+}
+
+.statusDotError {
+  background: #ff7a7a;
+  box-shadow: 0 0 0 6px rgba(255, 122, 122, 0.08);
+}
+
+.persistenceHint {
+  margin: 8px 0 0;
+  color: #9d9da4;
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+.persistenceHintSuccess {
+  color: #d6d0b8;
+}
+
+.persistenceHintError {
+  color: #ffb3b3;
 }
 
 .resultsCard {
@@ -378,6 +399,17 @@
   white-space: nowrap;
   animation: pulseBadge 2.2s ease-in-out infinite;
   background: rgba(255, 255, 255, 0.03);
+}
+
+.liveBadgeSuccess {
+  border-color: rgba(249, 181, 46, 0.18);
+  background: rgba(249, 181, 46, 0.08);
+}
+
+.liveBadgeError {
+  border-color: rgba(255, 122, 122, 0.18);
+  background: rgba(255, 122, 122, 0.08);
+  color: #ffd8d8;
 }
 
 .grid {

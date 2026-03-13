@@ -1,5 +1,27 @@
 ## Progresso Codex
 
+- Foi implementado um backend inicial em `Spring Boot` para persistencia de diagnosticos, com modulo isolado em `backend/`.
+- O frontend Next.js agora envia automaticamente o diagnostico coletado para `POST /api/diagnostics`, com fallback de URL via `NEXT_PUBLIC_API_BASE_URL` e feedback visual de persistencia na interface.
+- Foi adicionado um arquivo `.env.example` documentando a URL base esperada da API para o frontend.
+- O backend agora expoe `POST /api/diagnostics` para ingestao publica, `GET /api/health` para healthcheck e `GET /api/admin/diagnostics` protegido por `Basic Auth`.
+- Foram adicionados testes automatizados para controller, service, repository e seguranca do backend.
+- Foi ajustada a infraestrutura de testes do backend para o ambiente local em `Java 25`, forçando o `Mockito` a usar `mock-maker-subclass`.
+- Foi criada uma collection do Postman com os endpoints principais do backend, variaveis de base URL e credenciais admin, alem de scripts basicos de validacao de resposta.
+- A configuracao do backend foi separada por perfis, deixando `local` com `H2` em memoria como padrao para facilitar a subida no IntelliJ sem PostgreSQL.
+- Os arquivos de configuracao do backend foram convertidos de `.yml` para `.properties`, mantendo a separacao por perfis e padronizando o formato solicitado.
+- O perfil `postgres` do backend foi ajustado para usar `Flyway`, com migration inicial versionada e script SQL de criacao do banco e da role da aplicacao.
+- O backend agora usa `postgres` como profile padrao, e o launcher `run-next-dev.bat` passou a subir explicitamente o backend com `SPRING_PROFILES_ACTIVE=postgres`.
+- Foi criado um arquivo `backend/.env` para concentrar configuracoes sensiveis do backend, e o launcher `run-next-dev.bat` agora faz o source desse arquivo antes de subir a aplicacao.
+- Foi verificado que o banco `infinitygodiagnostics` e a role `infinitygo_app` ja existiam no PostgreSQL do Windows.
+- Foi corrigida a conectividade do backend rodando no WSL com o PostgreSQL do Windows, incluindo ajuste da regra do `pg_hba.conf`, criacao de script utilitario para esse setup e alinhamento do `backend/.env` com host e usuario corretos.
+- O projeto foi ajustado para subir frontend e backend nativamente no Windows, sem depender de WSL no launcher principal.
+- Foi criado um launcher dedicado `run-project-windows.bat` para subir backend e frontend nativamente no Windows com um duplo clique.
+- Foi corrigido o quoting do `run-project-windows.bat`, trocando o escape invalido `\"` por aspas duplas compativeis com `cmd.exe` para evitar o erro `The filename, directory name, or volume label syntax is incorrect`.
+- Foi adicionado `Maven Wrapper` ao backend, junto de um `run-backend-dev.cmd` para carregar `backend/.env` e executar o Spring Boot pelo Windows.
+- O script `dev` do frontend foi simplificado para `next dev`, removendo a configuracao especifica de `webpack + polling` usada apenas no WSL.
+- A interface inicial do frontend deixou mais claro quais dados são apenas estimativas do navegador, e os campos visuais `Status online` e `Economia de dados` foram removidos.
+- Foi adicionado um script PowerShell para executar o bootstrap do PostgreSQL no Windows com `psql.exe`, aproveitando a instalacao local detectada.
+- O script PowerShell de bootstrap do PostgreSQL foi corrigido para evitar conflito com a variavel automatica `$Host` do PowerShell.
 - O arquivo foi criado para iniciar o acompanhamento das atividades no repositório.
 - Foi executada uma tarefa operacional para listar as skills instaláveis via `skill-installer`.
 - Foram instaladas as skills `imagegen`, `render-deploy` e `vercel-deploy`.
@@ -13,9 +35,9 @@
 - A interface foi ajustada novamente para uma direcao mais proxima de product design premium inspirado em Apple.
 - O CSS foi refinado para uma direcao mais minimalista, com mais espaco em branco, cartoes sem borda e hierarquia tipografica mais limpa.
 - O CSS foi reescrito novamente para seguir uma especificacao tecnica exata de dark theme, cartoes, grid e tipografia.
-- Foi criado um arquivo `.bat` para abrir o Ubuntu no WSL e iniciar o Next.js com `npm run dev`.
+- Foi criado um arquivo `.bat` para iniciar o projeto localmente.
+- O arquivo `run-next-dev.bat` agora abre duas janelas `cmd` no Windows para subir backend e frontend nativamente.
 - O titulo principal do hero foi ajustado para `3rem` com `line-height: 1.2`, mantendo `Inter` como fonte geral.
-- O script de desenvolvimento foi ajustado para `webpack + polling`, visando corrigir hot reload no WSL com projeto em `/mnt/c`.
 - O tema foi ajustado para fundo global `#0A0A0A`, cartoes em `#171717`, sem bordas e com cantos de `12px`.
 - O layout principal foi refatorado para um painel premium mais leve, com container central em flex, colunas transparentes e foco visual nos pequenos cartoes de dados.
 - A tela de loading perdeu a caixa cinza do bloco central, deixando logo, textos e barra de progresso flutuando diretamente sobre o fundo preto.
@@ -31,6 +53,20 @@
 
 ### Status atual
 
+- O repositorio agora contem um backend Spring Boot funcional em `backend/`, preparado para evoluir a persistencia e o painel administrativo.
+- O frontend agora fecha o fluxo ponta a ponta localmente, coletando os dados do navegador e tentando persistir o payload real no backend assim que a tela carrega.
+- A interface passou a exibir o estado de persistencia do diagnostico, diferenciando envio em andamento, sucesso e falha de comunicacao com a API.
+- A API inicial do backend ja aceita salvar diagnosticos com dados de dispositivo e rede, conforme o catalogo atual do projeto.
+- O endpoint administrativo de listagem exige autenticacao via `Basic Auth`, enquanto a ingestao publica permanece liberada.
+- A suite de testes do backend cobre persistencia JPA, regras de servico, validacao HTTP e controle de acesso.
+- O repositório agora inclui um arquivo pronto para importacao no Postman, facilitando testes manuais da API.
+- O backend agora sobe localmente por padrao com `H2`, e o uso de PostgreSQL ficou isolado no perfil `postgres`.
+- O PostgreSQL agora passou a ser o modo padrao de execucao do backend, deixando o profile `local` disponivel apenas como fallback manual.
+- O start local do backend agora consegue herdar credenciais e configuracoes sensiveis diretamente de `backend/.env`, sem depender de export manual no shell.
+- O backend agora consegue subir nativamente no Windows usando `backend/.env`, `mvnw.cmd` e a instancia PostgreSQL local em `localhost:5432`.
+- O backend agora usa exclusivamente arquivos `.properties` para configuracao principal e de perfis.
+- O schema inicial do PostgreSQL agora está versionado em migration, deixando o Hibernate em modo de validacao no perfil `postgres`.
+- O repositório agora inclui scripts prontos para criar o banco `infinitygodiagnostics` e a role `infinitygo_app` em uma instalacao local de PostgreSQL no Windows.
 - Listagem de skills disponível para instalação sob demanda.
 - As skills solicitadas foram instaladas no ambiente local do Codex.
 - Existe uma definicao inicial dos dados desejados para coleta de dispositivo e conexao.
@@ -43,7 +79,11 @@
 - O visual atual privilegia superfícies escuras, tipografia limpa, vidro sutil e menos ornamentos visuais.
 - Os cartoes de dados agora usam labels pequenas em cinza e valores maiores em branco, com maior respiracao no layout.
 - A interface agora usa `Inter`, fundo `#0A0A0A`, cartoes `#171717` sem borda e grid fixo de duas colunas na area de ambiente detectado.
-- O projeto agora pode ser iniciado pelo Windows com um `.bat` que abre o Ubuntu no WSL, entra no repositorio e executa `npm run dev`.
+- O projeto agora pode ser iniciado pelo Windows com um `.bat` que abre duas janelas `cmd`, uma para o backend e outra para o frontend.
+- O repositório agora tambem inclui um launcher Windows com nome explicito para esse fluxo: `run-project-windows.bat`.
+- O start operacional local agora pode subir frontend e backend em paralelo a partir do mesmo `.bat`, simplificando a validacao manual do fluxo completo.
+- O frontend agora builda corretamente no Windows apos a reinstalacao das dependencias com `npm.cmd install`, gerando os wrappers `.cmd` necessarios em `node_modules/.bin`.
+- A unica pendencia operacional observada na validacao do backend nativo foi porta `8080` ocupada por um processo `wslrelay`, indicando que ainda havia uma instancia antiga encaminhada pelo WSL aberta no Windows.
 - O hero principal agora segue a proporcao tipografica solicitada para o titulo de abertura.
 - O ambiente de desenvolvimento agora esta configurado para observar mudancas de arquivos com polling.
 - A interface agora usa fundo de pagina quase preto e todos os cartoes principais com superficie solida escura, sem linhas de borda.
@@ -62,6 +102,8 @@
 ### Arquivos modificados
 
 - `codex-progress.md`
+- `.env.example`
+- `.gitignore`
 - `diagnostic-data-catalog.md`
 - `architecture-stack.md`
 - `package.json`
@@ -79,20 +121,62 @@
 - `assets/logo-dark-theme.png`
 - `assets/logo-light-theme.png`
 - `run-next-dev.bat`
+- `run-project-windows.bat`
+- `backend/.env`
+- `backend/run-backend-dev.cmd`
+- `backend/mvnw`
+- `backend/mvnw.cmd`
+- `backend/.mvn/wrapper/maven-wrapper.properties`
+- `backend/pom.xml`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/DiagnosticBackendApplication.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/config/AdminSecurityProperties.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/config/SecurityConfig.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticController.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticSubmissionRequest.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticCreatedResponse.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticAdminResponse.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/HealthResponse.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/domain/DiagnosticRecord.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/repository/DiagnosticRecordRepository.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/service/DiagnosticOperations.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/service/DiagnosticService.java`
+- `backend/src/main/resources/application.properties`
+- `backend/src/main/resources/application-local.properties`
+- `backend/src/main/resources/application-postgres.properties`
+- `backend/src/main/resources/db/migration/V1__create_diagnostics.sql`
+- `backend/scripts/create-postgres-db.sql`
+- `backend/scripts/create-postgres-db.ps1`
+- `backend/src/test/java/com/infinitygo/diagnosticbackend/AdminSecurityIntegrationTest.java`
+- `backend/src/test/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticControllerTest.java`
+- `backend/src/test/java/com/infinitygo/diagnosticbackend/diagnostic/repository/DiagnosticRecordRepositoryTest.java`
+- `backend/src/test/java/com/infinitygo/diagnosticbackend/diagnostic/service/DiagnosticServiceTest.java`
+- `backend/src/test/resources/application-test.properties`
+- `backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`
+- `backend/postman/infinitygo-diagnostic-api.postman_collection.json`
 
 ### Próximos passos recomendados
 
+- Se desejar testes manuais com ambientes diferentes, criar tambem um arquivo de environment do Postman separado para dev, homologacao e producao.
+- Substituir `ddl-auto: update` por migracoes versionadas antes de subir o backend em ambiente compartilhado.
+- Se for usar banco real, configurar o IntelliJ ou a execucao com `SPRING_PROFILES_ACTIVE=postgres` e as variaveis `DATABASE_URL`, `DATABASE_USERNAME` e `DATABASE_PASSWORD`.
+- Executar o script `backend/scripts/create-postgres-db.sql` em uma instancia PostgreSQL com privilegios administrativos para criar a role `infinitygo_app` e o banco `infinitygodiagnostics`.
+- Trocar as credenciais padrao de `Basic Auth` por variaveis de ambiente seguras e preparar um fluxo real de autenticacao administrativa.
+- Validar o fluxo completo no navegador com o backend em execucao local, confirmando o POST automatico e a listagem em `GET /api/admin/diagnostics`.
+- Encerrar a instancia antiga que ainda ocupa a porta `8080` no Windows antes de usar o novo launcher nativo.
+- Criar um painel administrativo inicial no frontend consumindo a listagem protegida de diagnosticos.
+- Decidir se a proxima coleta real de rede sera via integracao com speed test para preencher `download`, `upload`, `latency`, `jitter` e `packet loss`.
+- Configurar PostgreSQL local ou remoto para validar a persistencia fora do perfil de testes em H2.
 - Registrar implementações e arquivos modificados após tarefas relevantes.
 - Usar as novas skills instaladas quando houver solicitações compatíveis.
 - Validar quais dados do catalogo serao coletados no frontend, no backend ou em integracoes futuras.
 - Definir a arquitetura funcional inicial com base na stack escolhida.
 - Decidir a proxima etapa entre persistencia no backend, integracao com speedtest ou refinamento da UX inicial.
-- Validar se a distribuicao WSL se chama `Ubuntu`; se necessario, ajustar a variavel `WSL_DISTRO` em `run-next-dev.bat`.
 - Revisar visualmente o contraste do novo fundo `#0A0A0A` com os textos e elementos de destaque antes do proximo refinamento.
 - Validar em navegador se o novo espaco entre colunas e a hierarquia da coluna esquerda seguem a direcao visual esperada.
 - Validar se a tela de loading sem painel ainda tem contraste suficiente para leitura em telas menores.
 - Revisar se o brilho e o pulso da nova barra de loading estao sutis o bastante para nao parecer exagerados.
 - Verificar no navegador se o novo gradiente de fundo continua discreto o suficiente e nao interfere na leitura dos cards.
 - Validar se o ritmo da nova animacao de troca de logs combina bem com o intervalo atual das mensagens.
+- Validar no navegador se os novos rótulos deixam claro que os dados de memória e rede são estimativas do browser.
 - Manter os próximos textos adicionados ao projeto com português revisado e acentuação correta por padrão.
 - Configurar `user.name` e `user.email` do Git antes de criar o primeiro commit, se ainda não estiverem definidos.

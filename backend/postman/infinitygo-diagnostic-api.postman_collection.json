@@ -1,0 +1,169 @@
+{
+  "info": {
+    "_postman_id": "8f58bfbb-2b38-4f93-ae63-e03c715d8d6f",
+    "name": "InfinityGo Diagnostic API",
+    "description": "Collection para testar o backend inicial de diagnosticos da InfinityGo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": "change-me-now"
+    },
+    {
+      "key": "diagnosticId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Healthcheck",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "health"
+          ]
+        },
+        "description": "Valida se a API esta respondendo."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Healthcheck respondeu ok\", function () {",
+              "  var body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(\"ok\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Criar diagnostico",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"deviceType\": \"Desktop\",\n  \"operatingSystem\": \"Windows\",\n  \"browser\": \"Chrome\",\n  \"browserVersion\": \"134.0\",\n  \"language\": \"pt-BR\",\n  \"timezone\": \"America/Sao_Paulo\",\n  \"platform\": \"Win32\",\n  \"logicalCores\": 8,\n  \"memoryGigabytes\": 16.0,\n  \"connectionType\": \"wifi\",\n  \"online\": true,\n  \"latencyMs\": 12.4,\n  \"jitterMs\": 1.2,\n  \"packetLossPercent\": 0.0,\n  \"downloadMbps\": 500.25,\n  \"uploadMbps\": 210.1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/diagnostics",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "diagnostics"
+          ]
+        },
+        "description": "Cria um diagnostico com payload de exemplo."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Resposta possui id e createdAt\", function () {",
+              "  var body = pm.response.json();",
+              "  pm.expect(body.id).to.be.a(\"string\");",
+              "  pm.expect(body.createdAt).to.be.a(\"string\");",
+              "  pm.collectionVariables.set(\"diagnosticId\", body.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listar diagnosticos admin",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{adminUsername}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{adminPassword}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/diagnostics?limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "diagnostics"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Lista os diagnosticos recentes. Requer Basic Auth."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Resposta admin e uma lista\", function () {",
+              "  var body = pm.response.json();",
+              "  pm.expect(body).to.be.an(\"array\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

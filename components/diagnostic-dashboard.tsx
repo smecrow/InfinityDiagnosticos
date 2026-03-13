@@ -5,11 +5,32 @@ import { useEffect, useState } from "react";
 import logo from "@/assets/logo-dark-theme.png";
 import styles from "./diagnostic-dashboard.module.css";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://localhost:8080";
+
 type ConnectionInfo = {
   effectiveType: string;
   downlink: string;
   rtt: string;
   saveData: string;
+};
+
+type DiagnosticPayload = {
+  deviceType: string;
+  operatingSystem: string;
+  browser: string;
+  browserVersion: string;
+  language: string;
+  timezone: string;
+  platform: string | null;
+  logicalCores: number | null;
+  memoryGigabytes: number | null;
+  connectionType: string;
+  online: boolean;
+  latencyMs: number | null;
+  jitterMs: number | null;
+  packetLossPercent: number | null;
+  downloadMbps: number | null;
+  uploadMbps: number | null;
 };
 
 type DiagnosticData = {
@@ -27,15 +48,21 @@ type DiagnosticData = {
   connectionDetails: ConnectionInfo;
 };
 
+type CollectedDiagnostic = {
+  display: DiagnosticData;
+  payload: DiagnosticPayload;
+};
+
 type StatusItem = {
   label: string;
-  done: boolean;
+  tone: "pending" | "done" | "error";
 };
 
 const initialStatuses: StatusItem[] = [
-  { label: "Coletando dados do dispositivo", done: false },
-  { label: "Verificando status da conexão", done: false },
-  { label: "Organizando o diagnóstico inicial", done: false }
+  { label: "Coletando dados do dispositivo", tone: "pending" },
+  { label: "Verificando status da conexão", tone: "pending" },
+  { label: "Organizando o diagnóstico inicial", tone: "pending" },
+  { label: "Aguardando persistência do diagnóstico", tone: "pending" }
 ];
 
 const loadingMessages = [
@@ -74,6 +101,8 @@ type NavigatorWithConnection = Navigator & {
   };
   deviceMemory?: number;
 };
+
+type PersistenceState = "idle" | "saving" | "saved" | "error";
 
 function detectDeviceType(userAgent: string): string {
   if (/tablet|ipad/i.test(userAgent)) {
@@ -130,8 +159,20 @@ function detectBrowser(userAgent: string): { name: string; version: string } {
   return { name: "Não identificado", version: "Indisponível" };
 }
 
+function getRequiredText(value: string | null | undefined, fallback: string): string {
+  const normalizedValue = value?.trim();
+
+  return normalizedValue ? normalizedValue : fallback;
+}
+
+function getOptionalText(value: string | null | undefined): string | null {
+  const normalizedValue = value?.trim();
+
+  return normalizedValue ? normalizedValue : null;
+}
+
 function formatMemory(memory?: number): string {
-  if (!memory) {
+  if (typeof memory !== "number") {
     return "Indisponível";
   }
 
@@ -139,7 +180,7 @@ function formatMemory(memory?: number): string {
 }
 
 function formatCores(cores?: number): string {
-  if (!cores) {
+  if (typeof cores !== "number") {
     return "Indisponível";
   }
 
@@ -166,45 +207,136 @@ function formatConnectionDetails(navigatorObject: NavigatorWithConnection): Conn
   };
 }
 
+function buildApiUrl(path: string): string {
+  return `${API_BASE_URL.replace(/\/$/, "")}${path}`;
+}
+
+function buildStatuses(persistenceState: PersistenceState): StatusItem[] {
+  return [
+    { label: "Coletando dados do dispositivo", tone: "done" },
+    { label: "Verificando status da conexão", tone: "done" },
+    { label: "Organizando o diagnóstico inicial", tone: "done" },
+    {
+      label:
+        persistenceState === "saved"
+          ? "Diagnóstico salvo no backend"
+          : persistenceState === "error"
+            ? "Falha ao salvar o diagnóstico"
+            : persistenceState === "saving"
+              ? "Persistindo diagnóstico no backend"
+              : "Aguardando persistência do diagnóstico",
+      tone:
+        persistenceState === "saved"
+          ? "done"
+          : persistenceState === "error"
+            ? "error"
+            : "pending"
+    }
+  ];
+}
+
+function collectDiagnostic(navigatorObject: NavigatorWithConnection): CollectedDiagnostic {
+  const userAgent = navigatorObject.userAgent;
+  const browser = detectBrowser(userAgent);
+  const timezone = getRequiredText(Intl.DateTimeFormat().resolvedOptions().timeZone, "UTC");
+  const connectionInfo = formatConnectionDetails(navigatorObject);
+  const platform = getOptionalText(navigatorObject.platform);
+  const logicalCores =
+    typeof navigatorObject.hardwareConcurrency === "number" ? navigatorObject.hardwareConcurrency : null;
+  const memoryGigabytes = typeof navigatorObject.deviceMemory === "number" ? navigatorObject.deviceMemory : null;
+  const latencyMs = typeof navigatorObject.connection?.rtt === "number" ? navigatorObject.connection.rtt : null;
+  const downloadMbps =
+    typeof navigatorObject.connection?.downlink === "number" ? navigatorObject.connection.downlink : null;
+  const deviceType = detectDeviceType(userAgent);
+  const operatingSystem = detectOperatingSystem(userAgent);
+  const language = getRequiredText(navigatorObject.language, "Não identificado");
+  const connectionType = getRequiredText(connectionInfo.effectiveType, "Indisponível");
+
+  return {
+    display: {
+      deviceType,
+      operatingSystem,
+      browser: browser.name,
+      browserVersion: browser.version,
+      language,
+      timezone,
+      platform: platform ?? "Indisponível",
+      logicalCores: formatCores(logicalCores ?? undefined),
+      memory: formatMemory(memoryGigabytes ?? undefined),
+      connectionType,
+      onlineStatus: navigatorObject.onLine ? "Online" : "Offline",
+      connectionDetails: connectionInfo
+    },
+    payload: {
+      deviceType,
+      operatingSystem,
+      browser: browser.name,
+      browserVersion: browser.version,
+      language,
+      timezone,
+      platform,
+      logicalCores,
+      memoryGigabytes,
+      connectionType,
+      online: navigatorObject.onLine,
+      latencyMs,
+      jitterMs: null,
+      packetLossPercent: null,
+      downloadMbps,
+      uploadMbps: null
+    }
+  };
+}
+
+async function persistDiagnostic(payload: DiagnosticPayload, signal: AbortSignal): Promise<void> {
+  const response = await fetch(buildApiUrl("/api/diagnostics"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload),
+    signal
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao persistir diagnóstico: ${response.status}`);
+  }
+}
+
 export default function DiagnosticDashboard() {
-  const [statuses, setStatuses] = useState(initialStatuses);
   const [data, setData] = useState<DiagnosticData>(initialData);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [persistenceState, setPersistenceState] = useState<PersistenceState>("idle");
 
   useEffect(() => {
+    const abortController = new AbortController();
     const navigatorObject = window.navigator as NavigatorWithConnection;
-    const userAgent = navigatorObject.userAgent;
-    const browser = detectBrowser(userAgent);
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const connectionInfo = formatConnectionDetails(navigatorObject);
+    const collectedDiagnostic = collectDiagnostic(navigatorObject);
 
-    setStatuses([
-      { label: "Coletando dados do dispositivo", done: true },
-      { label: "Verificando status da conexão", done: true },
-      { label: "Organizando o diagnóstico inicial", done: true }
-    ]);
+    setData(collectedDiagnostic.display);
+    setPersistenceState("saving");
 
-    setData({
-      deviceType: detectDeviceType(userAgent),
-      operatingSystem: detectOperatingSystem(userAgent),
-      browser: browser.name,
-      browserVersion: browser.version,
-      language: navigatorObject.language || "Indisponível",
-      timezone: timezone || "Indisponível",
-      platform: navigatorObject.platform || "Indisponível",
-      logicalCores: formatCores(navigatorObject.hardwareConcurrency),
-      memory: formatMemory(navigatorObject.deviceMemory),
-      connectionType: connectionInfo.effectiveType,
-      onlineStatus: navigatorObject.onLine ? "Online" : "Offline",
-      connectionDetails: connectionInfo
-    });
+    persistDiagnostic(collectedDiagnostic.payload, abortController.signal)
+      .then(() => {
+        setPersistenceState("saved");
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setPersistenceState("error");
+      });
 
     const loadingTimeout = window.setTimeout(() => {
       setIsLoading(false);
     }, 3400);
 
-    return () => window.clearTimeout(loadingTimeout);
+    return () => {
+      abortController.abort();
+      window.clearTimeout(loadingTimeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -219,6 +351,7 @@ export default function DiagnosticDashboard() {
     return () => window.clearInterval(interval);
   }, [isLoading]);
 
+  const statuses = persistenceState === "idle" ? initialStatuses : buildStatuses(persistenceState);
   const rows = [
     { label: "Tipo de dispositivo", value: data.deviceType },
     { label: "Sistema operacional", value: data.operatingSystem },
@@ -228,19 +361,33 @@ export default function DiagnosticDashboard() {
     { label: "Fuso horário", value: data.timezone },
     { label: "Plataforma reportada", value: data.platform },
     { label: "CPU", value: data.logicalCores },
-    { label: "Memória RAM", value: data.memory },
-    { label: "Conexão reportada", value: data.connectionType },
-    { label: "Status online", value: data.onlineStatus },
-    { label: "Downlink reportado", value: data.connectionDetails.downlink },
-    { label: "RTT reportado", value: data.connectionDetails.rtt },
-    { label: "Economia de dados", value: data.connectionDetails.saveData }
+    { label: "Memória aproximada do navegador", value: data.memory },
+    { label: "Qualidade estimada da rede", value: data.connectionType },
+    { label: "Downlink estimado pelo navegador", value: data.connectionDetails.downlink },
+    { label: "RTT estimado pelo navegador", value: data.connectionDetails.rtt }
   ];
 
   const summaryItems = [
-    { label: "Status", value: data.onlineStatus },
-    { label: "Conexão", value: data.connectionType },
+    { label: "Dispositivo", value: data.deviceType },
+    { label: "Qualidade estimada", value: data.connectionType },
     { label: "Navegador", value: data.browser }
   ];
+  const persistenceBadgeLabel =
+    persistenceState === "saved"
+      ? "Salvo no backend"
+      : persistenceState === "error"
+        ? "Falha ao persistir"
+        : persistenceState === "saving"
+          ? "Persistindo no backend"
+          : "Preparando envio";
+  const persistenceHint =
+    persistenceState === "saved"
+      ? "O diagnóstico inicial foi persistido com sucesso e já pode ser consultado no backend."
+      : persistenceState === "error"
+        ? "Não foi possível persistir o diagnóstico automaticamente. Verifique se o backend está ativo e se NEXT_PUBLIC_API_BASE_URL aponta para a API correta."
+        : persistenceState === "saving"
+          ? "Enviando o diagnóstico coletado para o backend da InfinityGo."
+          : "O envio automático será iniciado assim que a coleta inicial terminar.";
 
   return (
     <>
@@ -307,10 +454,29 @@ export default function DiagnosticDashboard() {
                 className={styles.statusItem}
                 style={{ animationDelay: `${0.25 + index * 0.12}s` }}
               >
-                <span className={item.done ? styles.statusDotDone : styles.statusDot} />
+                <span
+                  className={
+                    item.tone === "done"
+                      ? styles.statusDotDone
+                      : item.tone === "error"
+                        ? styles.statusDotError
+                        : styles.statusDot
+                  }
+                />
                 <span>{item.label}</span>
               </div>
             ))}
+            <p
+              className={
+                persistenceState === "saved"
+                  ? `${styles.persistenceHint} ${styles.persistenceHintSuccess}`
+                  : persistenceState === "error"
+                    ? `${styles.persistenceHint} ${styles.persistenceHintError}`
+                    : styles.persistenceHint
+              }
+            >
+              {persistenceHint}
+            </p>
           </div>
         </section>
 
@@ -320,7 +486,17 @@ export default function DiagnosticDashboard() {
               <p className={styles.cardEyebrow}>Coleta automática</p>
               <h2 className={styles.cardTitle}>Ambiente detectado</h2>
             </div>
-            <div className={styles.liveBadge}>Atualizado agora</div>
+            <div
+              className={
+                persistenceState === "saved"
+                  ? `${styles.liveBadge} ${styles.liveBadgeSuccess}`
+                  : persistenceState === "error"
+                    ? `${styles.liveBadge} ${styles.liveBadgeError}`
+                    : styles.liveBadge
+              }
+            >
+              {persistenceBadgeLabel}
+            </div>
           </div>
 
           <div className={styles.grid}>
@@ -337,8 +513,8 @@ export default function DiagnosticDashboard() {
           </div>
 
           <div className={styles.notice}>
-            Os dados acima dependem do suporte do navegador. Informações mais profundas da rede e testes de
-            velocidade entram nas próximas etapas.
+            Os dados acima dependem do suporte do navegador e incluem estimativas fornecidas pelo próprio
+            browser. Informações mais profundas da rede e testes de velocidade entram nas próximas etapas.
           </div>
         </section>
       </main>
