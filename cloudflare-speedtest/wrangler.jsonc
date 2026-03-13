@@ -1,0 +1,11 @@
+{
+    "name": "infinitygo-speedtest",
+    "main": "worker.js",
+    "compatibility_date": "2026-03-13",
+    "workers_dev": true,
+    "vars": {
+        "ALLOWED_ORIGIN": "http://localhost:3000",
+        "MAX_DOWNLOAD_BYTES": "20000000",
+        "MAX_UPLOAD_BYTES": "8000000"
+    }
+}

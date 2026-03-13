@@ -6,9 +6,12 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +41,15 @@ public class DiagnosticController {
         DiagnosticCreatedResponse response = diagnosticService.createDiagnostic(request);
         URI location = URI.create("/api/admin/diagnostics/" + response.id());
         return ResponseEntity.created(location).body(response);
+    }
+
+    @PatchMapping("/diagnostics/{diagnosticId}/speedtest")
+    public ResponseEntity<Void> recordSpeedTest(
+        @PathVariable UUID diagnosticId,
+        @Valid @RequestBody SpeedTestResultRequest request
+    ) {
+        diagnosticService.recordSpeedTest(diagnosticId, request);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/admin/diagnostics")

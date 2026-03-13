@@ -65,6 +65,14 @@ public class DiagnosticRecord {
     @Column(precision = 10, scale = 2)
     private BigDecimal uploadMbps;
 
+    @Column(length = 50)
+    private String speedTestProvider;
+
+    @Column(length = 80)
+    private String speedTestRegion;
+
+    private Instant speedTestCompletedAt;
+
     public UUID getId() {
         return id;
     }
@@ -207,5 +215,29 @@ public class DiagnosticRecord {
 
     public void setUploadMbps(BigDecimal uploadMbps) {
         this.uploadMbps = uploadMbps;
+    }
+
+    public String getSpeedTestProvider() {
+        return speedTestProvider;
+    }
+
+    public void setSpeedTestProvider(String speedTestProvider) {
+        this.speedTestProvider = speedTestProvider;
+    }
+
+    public String getSpeedTestRegion() {
+        return speedTestRegion;
+    }
+
+    public void setSpeedTestRegion(String speedTestRegion) {
+        this.speedTestRegion = speedTestRegion;
+    }
+
+    public Instant getSpeedTestCompletedAt() {
+        return speedTestCompletedAt;
+    }
+
+    public void setSpeedTestCompletedAt(Instant speedTestCompletedAt) {
+        this.speedTestCompletedAt = speedTestCompletedAt;
     }
 }

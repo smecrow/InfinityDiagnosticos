@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -89,6 +90,45 @@ class DiagnosticControllerTest {
     }
 
     @Test
+    void shouldRecordSpeedTestWithoutAuthentication() throws Exception {
+        UUID diagnosticId = UUID.fromString("2db4fef8-8937-47bc-b661-9f9d871b86d2");
+
+        mockMvc.perform(patch("/api/diagnostics/{diagnosticId}/speedtest", diagnosticId)
+                .contentType(APPLICATION_JSON)
+                .content("""
+                    {
+                      "provider": "cloudflare-worker",
+                      "region": "GRU",
+                      "latencyMs": 18.4,
+                      "jitterMs": 2.1,
+                      "packetLossPercent": 0.0,
+                      "downloadMbps": 412.3,
+                      "uploadMbps": 198.7
+                    }
+                    """))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldRejectInvalidSpeedTestPayload() throws Exception {
+        UUID diagnosticId = UUID.fromString("2db4fef8-8937-47bc-b661-9f9d871b86d2");
+
+        mockMvc.perform(patch("/api/diagnostics/{diagnosticId}/speedtest", diagnosticId)
+                .contentType(APPLICATION_JSON)
+                .content("""
+                    {
+                      "provider": "",
+                      "latencyMs": -1,
+                      "jitterMs": 2.1,
+                      "packetLossPercent": 0.0,
+                      "downloadMbps": 412.3,
+                      "uploadMbps": 198.7
+                    }
+                    """))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void shouldRequireAuthenticationForAdminListing() throws Exception {
         mockMvc.perform(get("/api/admin/diagnostics"))
             .andExpect(status().isUnauthorized());
@@ -102,6 +142,7 @@ class DiagnosticControllerTest {
             .thenReturn(List.of(new DiagnosticAdminResponse(
                 diagnosticId,
                 Instant.parse("2026-03-12T11:00:00Z"),
+                Instant.parse("2026-03-12T11:02:00Z"),
                 "Desktop",
                 "Windows",
                 "Chrome",
@@ -117,12 +158,15 @@ class DiagnosticControllerTest {
                 new java.math.BigDecimal("1.20"),
                 new java.math.BigDecimal("0.00"),
                 new java.math.BigDecimal("500.25"),
-                new java.math.BigDecimal("210.10")
+                new java.math.BigDecimal("210.10"),
+                "cloudflare-worker",
+                "GRU"
             )));
 
         mockMvc.perform(get("/api/admin/diagnostics").with(httpBasic("admin", "secret123")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(diagnosticId.toString()))
-            .andExpect(jsonPath("$[0].connectionType").value("wifi"));
+            .andExpect(jsonPath("$[0].connectionType").value("wifi"))
+            .andExpect(jsonPath("$[0].speedTestProvider").value("cloudflare-worker"));
     }
 }

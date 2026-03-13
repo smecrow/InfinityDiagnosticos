@@ -20,6 +20,10 @@
 - Foi adicionado `Maven Wrapper` ao backend, junto de um `run-backend-dev.cmd` para carregar `backend/.env` e executar o Spring Boot pelo Windows.
 - O script `dev` do frontend foi simplificado para `next dev`, removendo a configuracao especifica de `webpack + polling` usada apenas no WSL.
 - A interface inicial do frontend deixou mais claro quais dados são apenas estimativas do navegador, e os campos visuais `Status online` e `Economia de dados` foram removidos.
+- Foi iniciada a integracao de speedtest real com endpoint externo configurável, incluindo bloco manual no frontend, persistencia posterior no mesmo diagnostico e um Worker de referência para Cloudflare.
+- O backend agora expoe `PATCH /api/diagnostics/{id}/speedtest` para anexar ao diagnostico as medições reais de `download`, `upload`, `latencia`, `jitter` e `perda`, junto de metadados do ponto de medicao.
+- O frontend passou a usar a URL publicada do Worker da Cloudflare como fallback padrão do speedtest, evitando bloqueio quando a variável pública não estiver definida no ambiente.
+- A estratégia de medição de throughput foi reforçada para links rápidos, com cargas maiores e requisições paralelas, reduzindo a subestimativa observada em conexões de 1 Gbps.
 - Foi adicionado um script PowerShell para executar o bootstrap do PostgreSQL no Windows com `psql.exe`, aproveitando a instalacao local detectada.
 - O script PowerShell de bootstrap do PostgreSQL foi corrigido para evitar conflito com a variavel automatica `$Host` do PowerShell.
 - O arquivo foi criado para iniciar o acompanhamento das atividades no repositório.
@@ -135,6 +139,7 @@
 - `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticSubmissionRequest.java`
 - `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticCreatedResponse.java`
 - `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/DiagnosticAdminResponse.java`
+- `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/SpeedTestResultRequest.java`
 - `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/api/HealthResponse.java`
 - `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/domain/DiagnosticRecord.java`
 - `backend/src/main/java/com/infinitygo/diagnosticbackend/diagnostic/repository/DiagnosticRecordRepository.java`
@@ -144,6 +149,7 @@
 - `backend/src/main/resources/application-local.properties`
 - `backend/src/main/resources/application-postgres.properties`
 - `backend/src/main/resources/db/migration/V1__create_diagnostics.sql`
+- `backend/src/main/resources/db/migration/V2__add_speedtest_metadata.sql`
 - `backend/scripts/create-postgres-db.sql`
 - `backend/scripts/create-postgres-db.ps1`
 - `backend/src/test/java/com/infinitygo/diagnosticbackend/AdminSecurityIntegrationTest.java`
@@ -153,6 +159,8 @@
 - `backend/src/test/resources/application-test.properties`
 - `backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`
 - `backend/postman/infinitygo-diagnostic-api.postman_collection.json`
+- `cloudflare-speedtest/worker.js`
+- `cloudflare-speedtest/README.md`
 
 ### Próximos passos recomendados
 
@@ -164,7 +172,9 @@
 - Validar o fluxo completo no navegador com o backend em execucao local, confirmando o POST automatico e a listagem em `GET /api/admin/diagnostics`.
 - Encerrar a instancia antiga que ainda ocupa a porta `8080` no Windows antes de usar o novo launcher nativo.
 - Criar um painel administrativo inicial no frontend consumindo a listagem protegida de diagnosticos.
-- Decidir se a proxima coleta real de rede sera via integracao com speed test para preencher `download`, `upload`, `latency`, `jitter` e `packet loss`.
+- Publicar o Worker de speedtest em uma URL externa e configurar `NEXT_PUBLIC_SPEEDTEST_BASE_URL` para validar o fluxo real ponta a ponta.
+- Revisar no navegador se o tempo e o volume usados nas medições de `ping`, `download` e `upload` estão equilibrados para conexões lentas e rápidas.
+- Confirmar no backend se os novos metadados `speedTestProvider`, `speedTestRegion` e `speedTestCompletedAt` aparecem corretamente na listagem administrativa.
 - Configurar PostgreSQL local ou remoto para validar a persistencia fora do perfil de testes em H2.
 - Registrar implementações e arquivos modificados após tarefas relevantes.
 - Usar as novas skills instaladas quando houver solicitações compatíveis.

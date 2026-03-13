@@ -3,6 +3,7 @@ package com.infinitygo.diagnosticbackend.diagnostic.service;
 import com.infinitygo.diagnosticbackend.diagnostic.api.DiagnosticAdminResponse;
 import com.infinitygo.diagnosticbackend.diagnostic.api.DiagnosticCreatedResponse;
 import com.infinitygo.diagnosticbackend.diagnostic.api.DiagnosticSubmissionRequest;
+import com.infinitygo.diagnosticbackend.diagnostic.api.SpeedTestResultRequest;
 import com.infinitygo.diagnosticbackend.diagnostic.domain.DiagnosticRecord;
 import com.infinitygo.diagnosticbackend.diagnostic.repository.DiagnosticRecordRepository;
 import java.time.Instant;
@@ -11,6 +12,9 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class DiagnosticService implements DiagnosticOperations {
@@ -51,6 +55,24 @@ public class DiagnosticService implements DiagnosticOperations {
         return new DiagnosticCreatedResponse(savedRecord.getId(), savedRecord.getCreatedAt());
     }
 
+    @Transactional
+    @Override
+    public void recordSpeedTest(UUID diagnosticId, SpeedTestResultRequest request) {
+        DiagnosticRecord record = diagnosticRecordRepository.findById(diagnosticId)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Diagnóstico não encontrado."));
+
+        record.setLatencyMs(request.latencyMs());
+        record.setJitterMs(request.jitterMs());
+        record.setPacketLossPercent(request.packetLossPercent());
+        record.setDownloadMbps(request.downloadMbps());
+        record.setUploadMbps(request.uploadMbps());
+        record.setSpeedTestProvider(trim(request.provider()));
+        record.setSpeedTestRegion(trimToNull(request.region()));
+        record.setSpeedTestCompletedAt(Instant.now());
+
+        diagnosticRecordRepository.save(record);
+    }
+
     @Transactional(readOnly = true)
     @Override
     public List<DiagnosticAdminResponse> listRecentDiagnostics(Integer requestedLimit) {
@@ -66,6 +88,7 @@ public class DiagnosticService implements DiagnosticOperations {
         return new DiagnosticAdminResponse(
             record.getId(),
             record.getCreatedAt(),
+            record.getSpeedTestCompletedAt(),
             record.getDeviceType(),
             record.getOperatingSystem(),
             record.getBrowser(),
@@ -81,7 +104,9 @@ public class DiagnosticService implements DiagnosticOperations {
             record.getJitterMs(),
             record.getPacketLossPercent(),
             record.getDownloadMbps(),
-            record.getUploadMbps()
+            record.getUploadMbps(),
+            record.getSpeedTestProvider(),
+            record.getSpeedTestRegion()
         );
     }
 

@@ -7,6 +7,7 @@ import java.util.UUID;
 public record DiagnosticAdminResponse(
     UUID id,
     Instant createdAt,
+    Instant speedTestCompletedAt,
     String deviceType,
     String operatingSystem,
     String browser,
@@ -22,6 +23,8 @@ public record DiagnosticAdminResponse(
     BigDecimal jitterMs,
     BigDecimal packetLossPercent,
     BigDecimal downloadMbps,
-    BigDecimal uploadMbps
+    BigDecimal uploadMbps,
+    String speedTestProvider,
+    String speedTestRegion
 ) {
 }

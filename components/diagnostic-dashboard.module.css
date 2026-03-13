@@ -468,6 +468,129 @@
   animation: riseIn 0.8s ease 0.9s both;
 }
 
+.speedTestSection {
+  margin-top: 24px;
+  padding: 28px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    #121212;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  animation: riseIn 0.8s ease 1s both;
+}
+
+.speedTestHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.speedTestCopy {
+  max-width: 38rem;
+}
+
+.speedTestTitle {
+  margin: 0;
+  font-family: "Inter", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+
+.speedTestBadge {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 0.88rem;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.speedTestBadgeSuccess {
+  border-color: rgba(249, 181, 46, 0.18);
+  background: rgba(249, 181, 46, 0.08);
+}
+
+.speedTestBadgeError {
+  border-color: rgba(255, 122, 122, 0.18);
+  background: rgba(255, 122, 122, 0.08);
+  color: #ffd8d8;
+}
+
+.speedTestBadgeMuted {
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #b0b0b5;
+}
+
+.speedTestActionRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: 18px;
+}
+
+.speedTestDescription {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.speedTestButton,
+.speedTestButtonDisabled {
+  min-width: 220px;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.speedTestButton {
+  border: 1px solid rgba(249, 181, 46, 0.28);
+  background: linear-gradient(180deg, rgba(249, 181, 46, 0.14), rgba(214, 138, 34, 0.1));
+  color: #fff2cf;
+  cursor: pointer;
+}
+
+.speedTestButton:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249, 181, 46, 0.42);
+}
+
+.speedTestButtonDisabled {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #8d8d94;
+  cursor: not-allowed;
+}
+
+.speedTestGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.speedTestTile {
+  padding: 22px 24px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  opacity: 0;
+  transform: translateY(16px);
+  animation: tileReveal 0.55s ease forwards;
+}
+
 @keyframes pulseBackdrop {
   0%,
   100% {
@@ -632,6 +755,16 @@
   .summaryRow {
     grid-template-columns: 1fr;
   }
+
+  .speedTestActionRow {
+    flex-direction: column;
+  }
+
+  .speedTestButton,
+  .speedTestButtonDisabled {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 @media (max-width: 640px) {
@@ -650,6 +783,15 @@
 
   .cardHeader {
     flex-direction: column;
+  }
+
+  .speedTestHeader {
+    flex-direction: column;
+  }
+
+  .speedTestGrid,
+  .grid {
+    grid-template-columns: 1fr;
   }
 
   .loadingPanel {
