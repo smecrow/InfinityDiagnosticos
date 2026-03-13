@@ -6,8 +6,6 @@ import logo from "@/assets/logo-dark-theme.png";
 import styles from "./diagnostic-dashboard.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://localhost:8080";
-const SPEEDTEST_BASE_URL =
-  process.env.NEXT_PUBLIC_SPEEDTEST_BASE_URL?.trim() || "https://infinitygo-speedtest.smecrowl9.workers.dev";
 
 type ConnectionInfo = {
   effectiveType: string;
@@ -140,7 +138,7 @@ type NavigatorWithConnection = Navigator & {
 };
 
 type PersistenceState = "idle" | "saving" | "saved" | "error";
-type SpeedTestState = "unavailable" | "idle" | "running" | "saving" | "saved" | "error";
+type SpeedTestState = "idle" | "running" | "saved" | "error";
 
 function detectDeviceType(userAgent: string): string {
   if (/tablet|ipad/i.test(userAgent)) {
@@ -249,10 +247,6 @@ function buildApiUrl(path: string): string {
   return `${API_BASE_URL.replace(/\/$/, "")}${path}`;
 }
 
-function buildSpeedTestUrl(path: string): string {
-  return `${SPEEDTEST_BASE_URL.replace(/\/$/, "")}${path}`;
-}
-
 function buildStatuses(persistenceState: PersistenceState): StatusItem[] {
   return [
     { label: "Coletando dados do dispositivo", tone: "done" },
@@ -330,75 +324,8 @@ function collectDiagnostic(navigatorObject: NavigatorWithConnection): CollectedD
   };
 }
 
-function getHeaderText(value: string | null): string | null {
-  const normalizedValue = value?.trim();
-
-  return normalizedValue ? normalizedValue : null;
-}
-
-function roundMetric(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function calculateAverage(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function calculateJitter(latencySamples: number[]): number {
-  if (latencySamples.length < 2) {
-    return 0;
-  }
-
-  const deltas = latencySamples.slice(1).map((sample, index) => Math.abs(sample - latencySamples[index]));
-  return calculateAverage(deltas);
-}
-
 function formatMetric(value: number, unit: string): string {
   return `${value.toFixed(2)} ${unit}`;
-}
-
-function toMbps(bytesTransferred: number, elapsedMs: number): number {
-  if (elapsedMs <= 0) {
-    return 0;
-  }
-
-  return (bytesTransferred * 8) / (elapsedMs / 1000) / 1_000_000;
-}
-
-async function fetchWithTimeout(
-  input: RequestInfo | URL,
-  init: RequestInit,
-  timeoutMs: number,
-  signal: AbortSignal
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => {
-    controller.abort();
-  }, timeoutMs);
-  const abortHandler = () => {
-    controller.abort();
-  };
-
-  if (signal.aborted) {
-    controller.abort();
-  } else {
-    signal.addEventListener("abort", abortHandler, { once: true });
-  }
-
-  try {
-    return await fetch(input, {
-      ...init,
-      cache: "no-store",
-      signal: controller.signal
-    });
-  } finally {
-    window.clearTimeout(timeoutId);
-    signal.removeEventListener("abort", abortHandler);
-  }
-}
-
-function buildCacheBustToken(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {
@@ -420,235 +347,6 @@ function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {
 
     signal.addEventListener("abort", abortHandler, { once: true });
   });
-}
-
-function readSpeedTestMetadata(response: Response): { provider: string | null; region: string | null } {
-  return {
-    provider: getHeaderText(response.headers.get("x-speedtest-provider")),
-    region: getHeaderText(response.headers.get("x-speedtest-region"))
-  };
-}
-
-async function measurePingSample(
-  signal: AbortSignal
-): Promise<{ latencyMs: number; provider: string | null; region: string | null }> {
-  const startedAt = performance.now();
-  const response = await fetchWithTimeout(
-    buildSpeedTestUrl(`/ping?cacheBust=${buildCacheBustToken()}`),
-    { method: "GET" },
-    3000,
-    signal
-  );
-
-  if (!response.ok && response.status !== 204) {
-    throw new Error(`Ping falhou com status ${response.status}`);
-  }
-
-  const elapsedMs = performance.now() - startedAt;
-  const metadata = readSpeedTestMetadata(response);
-
-  return {
-    latencyMs: elapsedMs,
-    provider: metadata.provider,
-    region: metadata.region
-  };
-}
-
-async function measureDownloadSample(
-  bytes: number,
-  signal: AbortSignal
-): Promise<{ mbps: number; provider: string | null; region: string | null }> {
-  const startedAt = performance.now();
-  const response = await fetchWithTimeout(
-    buildSpeedTestUrl(`/download?bytes=${bytes}&cacheBust=${buildCacheBustToken()}`),
-    { method: "GET" },
-    12000,
-    signal
-  );
-
-  if (!response.ok) {
-    throw new Error(`Download falhou com status ${response.status}`);
-  }
-
-  const metadata = readSpeedTestMetadata(response);
-  const payload = await response.arrayBuffer();
-  const elapsedMs = performance.now() - startedAt;
-
-  return {
-    mbps: toMbps(payload.byteLength, elapsedMs),
-    provider: metadata.provider,
-    region: metadata.region
-  };
-}
-
-async function measureConcurrentDownloadSample(
-  bytesPerRequest: number,
-  parallelRequests: number,
-  signal: AbortSignal
-): Promise<{ mbps: number; provider: string | null; region: string | null }> {
-  const startedAt = performance.now();
-  const responses = await Promise.all(
-    Array.from({ length: parallelRequests }, () =>
-      fetchWithTimeout(
-        buildSpeedTestUrl(`/download?bytes=${bytesPerRequest}&cacheBust=${buildCacheBustToken()}`),
-        { method: "GET" },
-        15000,
-        signal
-      )
-    )
-  );
-
-  for (const response of responses) {
-    if (!response.ok) {
-      throw new Error(`Download falhou com status ${response.status}`);
-    }
-  }
-
-  const firstMetadata = readSpeedTestMetadata(responses[0]);
-  const payloads = await Promise.all(responses.map((response) => response.arrayBuffer()));
-  const totalBytes = payloads.reduce((sum, payload) => sum + payload.byteLength, 0);
-  const elapsedMs = performance.now() - startedAt;
-
-  return {
-    mbps: toMbps(totalBytes, elapsedMs),
-    provider: firstMetadata.provider,
-    region: firstMetadata.region
-  };
-}
-
-async function measureUploadSample(
-  bytes: number,
-  signal: AbortSignal
-): Promise<{ mbps: number; provider: string | null; region: string | null }> {
-  const payload = new Uint8Array(bytes);
-  const startedAt = performance.now();
-  const response = await fetchWithTimeout(
-    buildSpeedTestUrl(`/upload?cacheBust=${buildCacheBustToken()}`),
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream"
-      },
-      body: payload
-    },
-    12000,
-    signal
-  );
-
-  if (!response.ok) {
-    throw new Error(`Upload falhou com status ${response.status}`);
-  }
-
-  const metadata = readSpeedTestMetadata(response);
-  await response.text();
-  const elapsedMs = performance.now() - startedAt;
-
-  return {
-    mbps: toMbps(payload.byteLength, elapsedMs),
-    provider: metadata.provider,
-    region: metadata.region
-  };
-}
-
-async function measureConcurrentUploadSample(
-  bytesPerRequest: number,
-  parallelRequests: number,
-  signal: AbortSignal
-): Promise<{ mbps: number; provider: string | null; region: string | null }> {
-  const payloads = Array.from({ length: parallelRequests }, () => new Uint8Array(bytesPerRequest));
-  const startedAt = performance.now();
-  const responses = await Promise.all(
-    payloads.map((payload) =>
-      fetchWithTimeout(
-        buildSpeedTestUrl(`/upload?cacheBust=${buildCacheBustToken()}`),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/octet-stream"
-          },
-          body: payload
-        },
-        15000,
-        signal
-      )
-    )
-  );
-
-  for (const response of responses) {
-    if (!response.ok) {
-      throw new Error(`Upload falhou com status ${response.status}`);
-    }
-  }
-
-  const firstMetadata = readSpeedTestMetadata(responses[0]);
-  await Promise.all(responses.map((response) => response.text()));
-  const totalBytes = payloads.reduce((sum, payload) => sum + payload.byteLength, 0);
-  const elapsedMs = performance.now() - startedAt;
-
-  return {
-    mbps: toMbps(totalBytes, elapsedMs),
-    provider: firstMetadata.provider,
-    region: firstMetadata.region
-  };
-}
-
-async function runSpeedTest(signal: AbortSignal): Promise<SpeedTestPayload> {
-  const latencySamples: number[] = [];
-  const downloadSamples: number[] = [];
-  const uploadSamples: number[] = [];
-  const totalPings = 8;
-  let failedPings = 0;
-  let provider: string | null = null;
-  let region: string | null = null;
-
-  for (let index = 0; index < totalPings; index += 1) {
-    try {
-      const sample = await measurePingSample(signal);
-      latencySamples.push(sample.latencyMs);
-      provider = provider ?? sample.provider;
-      region = region ?? sample.region;
-    } catch (error: unknown) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        throw error;
-      }
-
-      failedPings += 1;
-    }
-  }
-
-  if (!latencySamples.length) {
-    throw new Error("Não foi possível medir a latência com o endpoint configurado.");
-  }
-
-  for (const [bytesPerRequest, parallelRequests] of [
-    [8_000_000, 3],
-    [12_000_000, 4]
-  ] as const) {
-    const sample = await measureConcurrentDownloadSample(bytesPerRequest, parallelRequests, signal);
-    downloadSamples.push(sample.mbps);
-    provider = provider ?? sample.provider;
-    region = region ?? sample.region;
-  }
-
-  for (const [bytesPerRequest, parallelRequests] of [
-    [4_000_000, 3],
-    [6_000_000, 4]
-  ] as const) {
-    const sample = await measureConcurrentUploadSample(bytesPerRequest, parallelRequests, signal);
-    uploadSamples.push(sample.mbps);
-    provider = provider ?? sample.provider;
-    region = region ?? sample.region;
-  }
-
-  return {
-    provider: provider ?? "edge-worker",
-    region,
-    latencyMs: roundMetric(calculateAverage(latencySamples)),
-    jitterMs: roundMetric(calculateJitter(latencySamples)),
-    packetLossPercent: roundMetric((failedPings / totalPings) * 100),
-    downloadMbps: roundMetric(calculateAverage(downloadSamples)),
-    uploadMbps: roundMetric(calculateAverage(uploadSamples))
-  };
 }
 
 function buildSpeedTestDisplay(result: SpeedTestPayload): SpeedTestDisplay {
@@ -709,23 +407,17 @@ async function persistDiagnosticWithRetry(
   throw lastError ?? new Error("Falha ao persistir diagnóstico.");
 }
 
-async function persistSpeedTestResult(
-  diagnosticId: string,
-  payload: SpeedTestPayload,
-  signal: AbortSignal
-): Promise<void> {
+async function executeSpeedTest(diagnosticId: string, signal: AbortSignal): Promise<SpeedTestPayload> {
   const response = await fetch(buildApiUrl(`/api/diagnostics/${diagnosticId}/speedtest`), {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload),
+    method: "POST",
     signal
   });
 
   if (!response.ok) {
-    throw new Error(`Falha ao persistir speedtest: ${response.status}`);
+    throw new Error(`Falha ao executar speedtest: ${response.status}`);
   }
+
+  return (await response.json()) as SpeedTestPayload;
 }
 
 export default function DiagnosticDashboard() {
@@ -734,14 +426,10 @@ export default function DiagnosticDashboard() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [persistenceState, setPersistenceState] = useState<PersistenceState>("idle");
   const [diagnosticId, setDiagnosticId] = useState<string | null>(null);
-  const [speedTestState, setSpeedTestState] = useState<SpeedTestState>(
-    SPEEDTEST_BASE_URL ? "idle" : "unavailable"
-  );
+  const [speedTestState, setSpeedTestState] = useState<SpeedTestState>("idle");
   const [speedTestDisplay, setSpeedTestDisplay] = useState<SpeedTestDisplay>(initialSpeedTestDisplay);
   const [speedTestHint, setSpeedTestHint] = useState(
-    SPEEDTEST_BASE_URL
-      ? "Quando você iniciar o teste, a medição real será feita contra o endpoint externo configurado e o resultado será salvo neste diagnóstico."
-      : "Defina NEXT_PUBLIC_SPEEDTEST_BASE_URL para habilitar a medição real de download, upload, latência, jitter e perda."
+    "Quando você iniciar o teste, o backend executará o Speedtest CLI da Ookla no servidor da InfinityGO em Caldas Novas/GO e salvará o resultado neste diagnóstico."
   );
   const speedTestControllerRef = useRef<AbortController | null>(null);
 
@@ -831,24 +519,16 @@ export default function DiagnosticDashboard() {
       ? "Resultado salvo"
       : speedTestState === "error"
         ? "Falha no teste"
-        : speedTestState === "saving"
-          ? "Salvando medição"
-          : speedTestState === "running"
-            ? "Executando teste"
-            : speedTestState === "unavailable"
-              ? "Configuração pendente"
-              : "Pronto para iniciar";
+        : speedTestState === "running"
+          ? "Executando teste"
+          : "Pronto para iniciar";
   const speedTestActionLabel =
-    speedTestState === "running" || speedTestState === "saving"
+    speedTestState === "running"
       ? "Executando..."
       : speedTestState === "saved"
         ? "Executar novamente"
         : "Iniciar speedtest";
-  const isSpeedTestButtonDisabled =
-    speedTestState === "unavailable" ||
-    speedTestState === "running" ||
-    speedTestState === "saving" ||
-    !diagnosticId;
+  const isSpeedTestButtonDisabled = speedTestState === "running" || !diagnosticId;
   const speedTestRows = [
     { label: "Latência real", value: speedTestDisplay.latencyMs },
     { label: "Jitter", value: speedTestDisplay.jitterMs },
@@ -860,7 +540,7 @@ export default function DiagnosticDashboard() {
   ];
 
   async function handleSpeedTest(): Promise<void> {
-    if (!diagnosticId || !SPEEDTEST_BASE_URL || speedTestState === "running" || speedTestState === "saving") {
+    if (!diagnosticId || speedTestState === "running") {
       return;
     }
 
@@ -869,17 +549,12 @@ export default function DiagnosticDashboard() {
     speedTestControllerRef.current = controller;
 
     setSpeedTestState("running");
-    setSpeedTestHint("Executando a medição real no endpoint externo configurado. Isso pode levar alguns segundos.");
+    setSpeedTestHint("Executando o Speedtest CLI da Ookla no backend contra o servidor da InfinityGO. Isso pode levar alguns segundos.");
 
     try {
-      const result = await runSpeedTest(controller.signal);
+      const result = await executeSpeedTest(diagnosticId, controller.signal);
 
       setSpeedTestDisplay(buildSpeedTestDisplay(result));
-      setSpeedTestState("saving");
-      setSpeedTestHint("Medição concluída. Persistindo o resultado real no backend da InfinityGo.");
-
-      await persistSpeedTestResult(diagnosticId, result, controller.signal);
-
       setSpeedTestState("saved");
       setSpeedTestHint("O resultado do speedtest foi salvo neste diagnóstico e pode ser consultado no backend.");
     } catch (error: unknown) {
@@ -888,14 +563,12 @@ export default function DiagnosticDashboard() {
       }
 
       setSpeedTestState("error");
-      if (error instanceof Error && error.message.startsWith("Falha ao persistir speedtest")) {
+      if (error instanceof Error && error.message.startsWith("Falha ao executar speedtest")) {
         setSpeedTestHint(
-          "O speedtest foi concluído, mas não foi possível salvar o resultado no backend. Verifique a API configurada em NEXT_PUBLIC_API_BASE_URL e tente novamente."
+          "Não foi possível concluir o speedtest. Verifique se o backend está ativo e se o Speedtest CLI da Ookla está disponível no ambiente."
         );
       } else {
-        setSpeedTestHint(
-          "Não foi possível concluir o speedtest. Verifique o endpoint configurado em NEXT_PUBLIC_SPEEDTEST_BASE_URL e tente novamente."
-        );
+        setSpeedTestHint("Não foi possível concluir o speedtest neste momento. Tente novamente em alguns instantes.");
       }
     } finally {
       speedTestControllerRef.current = null;
@@ -1042,9 +715,7 @@ export default function DiagnosticDashboard() {
                     ? `${styles.speedTestBadge} ${styles.speedTestBadgeSuccess}`
                     : speedTestState === "error"
                       ? `${styles.speedTestBadge} ${styles.speedTestBadgeError}`
-                      : speedTestState === "unavailable"
-                        ? `${styles.speedTestBadge} ${styles.speedTestBadgeMuted}`
-                        : styles.speedTestBadge
+                      : styles.speedTestBadge
                 }
               >
                 {speedTestBadgeLabel}

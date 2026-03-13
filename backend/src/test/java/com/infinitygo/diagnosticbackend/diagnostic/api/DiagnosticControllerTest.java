@@ -90,6 +90,28 @@ class DiagnosticControllerTest {
     }
 
     @Test
+    void shouldExecuteSpeedTestWithoutAuthentication() throws Exception {
+        UUID diagnosticId = UUID.fromString("2db4fef8-8937-47bc-b661-9f9d871b86d2");
+
+        when(diagnosticService.executeSpeedTest(diagnosticId))
+            .thenReturn(new ExecutedSpeedTestResponse(
+                "Ookla CLI / InfinityGO Telecom",
+                "Caldas Novas/GO",
+                new java.math.BigDecimal("14.21"),
+                new java.math.BigDecimal("1.47"),
+                new java.math.BigDecimal("0.00"),
+                new java.math.BigDecimal("921.88"),
+                new java.math.BigDecimal("468.34")
+            ));
+
+        mockMvc.perform(post("/api/diagnostics/{diagnosticId}/speedtest", diagnosticId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.provider").value("Ookla CLI / InfinityGO Telecom"))
+            .andExpect(jsonPath("$.region").value("Caldas Novas/GO"))
+            .andExpect(jsonPath("$.downloadMbps").value(921.88));
+    }
+
+    @Test
     void shouldRecordSpeedTestWithoutAuthentication() throws Exception {
         UUID diagnosticId = UUID.fromString("2db4fef8-8937-47bc-b661-9f9d871b86d2");
 
@@ -97,8 +119,8 @@ class DiagnosticControllerTest {
                 .contentType(APPLICATION_JSON)
                 .content("""
                     {
-                      "provider": "cloudflare-worker",
-                      "region": "GRU",
+                      "provider": "Ookla CLI / InfinityGO Telecom",
+                      "region": "Caldas Novas/GO",
                       "latencyMs": 18.4,
                       "jitterMs": 2.1,
                       "packetLossPercent": 0.0,
@@ -159,14 +181,14 @@ class DiagnosticControllerTest {
                 new java.math.BigDecimal("0.00"),
                 new java.math.BigDecimal("500.25"),
                 new java.math.BigDecimal("210.10"),
-                "cloudflare-worker",
-                "GRU"
+                "Ookla CLI / InfinityGO Telecom",
+                "Caldas Novas/GO"
             )));
 
         mockMvc.perform(get("/api/admin/diagnostics").with(httpBasic("admin", "secret123")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(diagnosticId.toString()))
             .andExpect(jsonPath("$[0].connectionType").value("wifi"))
-            .andExpect(jsonPath("$[0].speedTestProvider").value("cloudflare-worker"));
+            .andExpect(jsonPath("$[0].speedTestProvider").value("Ookla CLI / InfinityGO Telecom"));
     }
 }

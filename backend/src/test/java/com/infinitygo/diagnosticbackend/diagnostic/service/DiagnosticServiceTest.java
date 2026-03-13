@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.infinitygo.diagnosticbackend.diagnostic.api.DiagnosticSubmissionRequest;
+import com.infinitygo.diagnosticbackend.diagnostic.api.ExecutedSpeedTestResponse;
 import com.infinitygo.diagnosticbackend.diagnostic.api.SpeedTestResultRequest;
 import com.infinitygo.diagnosticbackend.diagnostic.domain.DiagnosticRecord;
 import com.infinitygo.diagnosticbackend.diagnostic.repository.DiagnosticRecordRepository;
@@ -30,6 +31,9 @@ class DiagnosticServiceTest {
 
     @Mock
     private DiagnosticRecordRepository diagnosticRecordRepository;
+
+    @Mock
+    private OoklaSpeedTestRunner ooklaSpeedTestRunner;
 
     @InjectMocks
     private DiagnosticService diagnosticService;
@@ -82,6 +86,48 @@ class DiagnosticServiceTest {
     }
 
     @Test
+    void shouldExecuteOoklaSpeedTestForExistingDiagnostic() {
+        UUID diagnosticId = UUID.fromString("1f7573c2-e530-4607-a8ea-95fca9d6cd6a");
+        DiagnosticRecord record = new DiagnosticRecord();
+        record.setId(diagnosticId);
+        record.setCreatedAt(Instant.parse("2026-03-12T12:00:00Z"));
+        record.setDeviceType("Desktop");
+        record.setOperatingSystem("Windows");
+        record.setBrowser("Chrome");
+        record.setBrowserVersion("134.0");
+        record.setLanguage("pt-BR");
+        record.setTimezone("America/Sao_Paulo");
+        record.setConnectionType("wifi");
+        record.setOnline(true);
+
+        when(diagnosticRecordRepository.findById(diagnosticId)).thenReturn(Optional.of(record));
+        when(diagnosticRecordRepository.save(any(DiagnosticRecord.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0, DiagnosticRecord.class));
+        when(ooklaSpeedTestRunner.runSpeedTest()).thenReturn(new OoklaSpeedTestResult(
+            " Ookla CLI / InfinityGO Telecom ",
+            " Caldas Novas/GO ",
+            new BigDecimal("14.21"),
+            new BigDecimal("1.47"),
+            new BigDecimal("0.00"),
+            new BigDecimal("921.88"),
+            new BigDecimal("468.34")
+        ));
+
+        ExecutedSpeedTestResponse response = diagnosticService.executeSpeedTest(diagnosticId);
+
+        ArgumentCaptor<DiagnosticRecord> captor = ArgumentCaptor.forClass(DiagnosticRecord.class);
+        verify(diagnosticRecordRepository).save(captor.capture());
+
+        DiagnosticRecord updatedRecord = captor.getValue();
+        assertThat(response.provider()).isEqualTo("Ookla CLI / InfinityGO Telecom");
+        assertThat(response.region()).isEqualTo("Caldas Novas/GO");
+        assertThat(response.downloadMbps()).isEqualByComparingTo("921.88");
+        assertThat(updatedRecord.getSpeedTestProvider()).isEqualTo("Ookla CLI / InfinityGO Telecom");
+        assertThat(updatedRecord.getSpeedTestRegion()).isEqualTo("Caldas Novas/GO");
+        assertThat(updatedRecord.getSpeedTestCompletedAt()).isNotNull();
+    }
+
+    @Test
     void shouldRecordMeasuredSpeedTestForExistingDiagnostic() {
         UUID diagnosticId = UUID.fromString("662fa92d-6b11-448d-90fe-5ea24309ff84");
         DiagnosticRecord record = new DiagnosticRecord();
@@ -101,8 +147,8 @@ class DiagnosticServiceTest {
             .thenAnswer(invocation -> invocation.getArgument(0, DiagnosticRecord.class));
 
         diagnosticService.recordSpeedTest(diagnosticId, new SpeedTestResultRequest(
-            " cloudflare-worker ",
-            " GRU ",
+            " Ookla CLI / InfinityGO Telecom ",
+            " Caldas Novas/GO ",
             new BigDecimal("18.40"),
             new BigDecimal("2.10"),
             new BigDecimal("0.00"),
@@ -119,8 +165,8 @@ class DiagnosticServiceTest {
         assertThat(updatedRecord.getPacketLossPercent()).isEqualByComparingTo("0.00");
         assertThat(updatedRecord.getDownloadMbps()).isEqualByComparingTo("412.30");
         assertThat(updatedRecord.getUploadMbps()).isEqualByComparingTo("198.70");
-        assertThat(updatedRecord.getSpeedTestProvider()).isEqualTo("cloudflare-worker");
-        assertThat(updatedRecord.getSpeedTestRegion()).isEqualTo("GRU");
+        assertThat(updatedRecord.getSpeedTestProvider()).isEqualTo("Ookla CLI / InfinityGO Telecom");
+        assertThat(updatedRecord.getSpeedTestRegion()).isEqualTo("Caldas Novas/GO");
         assertThat(updatedRecord.getSpeedTestCompletedAt()).isNotNull();
     }
 
@@ -131,8 +177,8 @@ class DiagnosticServiceTest {
         when(diagnosticRecordRepository.findById(diagnosticId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> diagnosticService.recordSpeedTest(diagnosticId, new SpeedTestResultRequest(
-            "cloudflare-worker",
-            "GRU",
+            "Ookla CLI / InfinityGO Telecom",
+            "Caldas Novas/GO",
             new BigDecimal("18.40"),
             new BigDecimal("2.10"),
             new BigDecimal("0.00"),

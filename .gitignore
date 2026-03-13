@@ -3,6 +3,7 @@ node_modules/
 .idea/
 tsconfig.tsbuildinfo
 backend/target/
+backend/.m2/
 .env
 .env.docker
 backend/.env

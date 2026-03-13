@@ -3,6 +3,7 @@ package com.infinitygo.diagnosticbackend.diagnostic.service;
 import com.infinitygo.diagnosticbackend.diagnostic.api.DiagnosticAdminResponse;
 import com.infinitygo.diagnosticbackend.diagnostic.api.DiagnosticCreatedResponse;
 import com.infinitygo.diagnosticbackend.diagnostic.api.DiagnosticSubmissionRequest;
+import com.infinitygo.diagnosticbackend.diagnostic.api.ExecutedSpeedTestResponse;
 import com.infinitygo.diagnosticbackend.diagnostic.api.SpeedTestResultRequest;
 import com.infinitygo.diagnosticbackend.diagnostic.domain.DiagnosticRecord;
 import com.infinitygo.diagnosticbackend.diagnostic.repository.DiagnosticRecordRepository;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 @Service
 public class DiagnosticService implements DiagnosticOperations {
@@ -23,9 +25,14 @@ public class DiagnosticService implements DiagnosticOperations {
     private static final int MAX_LIMIT = 100;
 
     private final DiagnosticRecordRepository diagnosticRecordRepository;
+    private final OoklaSpeedTestRunner ooklaSpeedTestRunner;
 
-    public DiagnosticService(DiagnosticRecordRepository diagnosticRecordRepository) {
+    public DiagnosticService(
+        DiagnosticRecordRepository diagnosticRecordRepository,
+        OoklaSpeedTestRunner ooklaSpeedTestRunner
+    ) {
         this.diagnosticRecordRepository = diagnosticRecordRepository;
+        this.ooklaSpeedTestRunner = ooklaSpeedTestRunner;
     }
 
     @Transactional
@@ -57,18 +64,57 @@ public class DiagnosticService implements DiagnosticOperations {
 
     @Transactional
     @Override
+    public ExecutedSpeedTestResponse executeSpeedTest(UUID diagnosticId) {
+        DiagnosticRecord record = diagnosticRecordRepository.findById(diagnosticId)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Diagnóstico não encontrado."));
+
+        OoklaSpeedTestResult result;
+        try {
+            result = ooklaSpeedTestRunner.runSpeedTest();
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(SERVICE_UNAVAILABLE, exception.getMessage(), exception);
+        }
+
+        applySpeedTestResult(
+            record,
+            result.provider(),
+            result.region(),
+            result.latencyMs(),
+            result.jitterMs(),
+            result.packetLossPercent(),
+            result.downloadMbps(),
+            result.uploadMbps()
+        );
+
+        diagnosticRecordRepository.save(record);
+
+        return new ExecutedSpeedTestResponse(
+            record.getSpeedTestProvider(),
+            record.getSpeedTestRegion(),
+            record.getLatencyMs(),
+            record.getJitterMs(),
+            record.getPacketLossPercent(),
+            record.getDownloadMbps(),
+            record.getUploadMbps()
+        );
+    }
+
+    @Transactional
+    @Override
     public void recordSpeedTest(UUID diagnosticId, SpeedTestResultRequest request) {
         DiagnosticRecord record = diagnosticRecordRepository.findById(diagnosticId)
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Diagnóstico não encontrado."));
 
-        record.setLatencyMs(request.latencyMs());
-        record.setJitterMs(request.jitterMs());
-        record.setPacketLossPercent(request.packetLossPercent());
-        record.setDownloadMbps(request.downloadMbps());
-        record.setUploadMbps(request.uploadMbps());
-        record.setSpeedTestProvider(trim(request.provider()));
-        record.setSpeedTestRegion(trimToNull(request.region()));
-        record.setSpeedTestCompletedAt(Instant.now());
+        applySpeedTestResult(
+            record,
+            request.provider(),
+            request.region(),
+            request.latencyMs(),
+            request.jitterMs(),
+            request.packetLossPercent(),
+            request.downloadMbps(),
+            request.uploadMbps()
+        );
 
         diagnosticRecordRepository.save(record);
     }
@@ -120,6 +166,26 @@ public class DiagnosticService implements DiagnosticOperations {
 
     private String trim(String value) {
         return value.trim();
+    }
+
+    private void applySpeedTestResult(
+        DiagnosticRecord record,
+        String provider,
+        String region,
+        java.math.BigDecimal latencyMs,
+        java.math.BigDecimal jitterMs,
+        java.math.BigDecimal packetLossPercent,
+        java.math.BigDecimal downloadMbps,
+        java.math.BigDecimal uploadMbps
+    ) {
+        record.setLatencyMs(latencyMs);
+        record.setJitterMs(jitterMs);
+        record.setPacketLossPercent(packetLossPercent);
+        record.setDownloadMbps(downloadMbps);
+        record.setUploadMbps(uploadMbps);
+        record.setSpeedTestProvider(trim(provider));
+        record.setSpeedTestRegion(trimToNull(region));
+        record.setSpeedTestCompletedAt(Instant.now());
     }
 
     private String trimToNull(String value) {

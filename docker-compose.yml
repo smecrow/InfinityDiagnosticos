@@ -30,6 +30,11 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      OOKLA_CLI_BINARY: ${OOKLA_CLI_BINARY:-speedtest}
+      OOKLA_SERVER_ID: ${OOKLA_SERVER_ID:-35474}
+      OOKLA_PROVIDER_LABEL: ${OOKLA_PROVIDER_LABEL:-Ookla CLI / InfinityGO Telecom}
+      OOKLA_REGION_LABEL: ${OOKLA_REGION_LABEL:-Caldas Novas/GO}
+      OOKLA_TIMEOUT_SECONDS: ${OOKLA_TIMEOUT_SECONDS:-90}
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -40,7 +45,6 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
-        NEXT_PUBLIC_SPEEDTEST_BASE_URL: ${NEXT_PUBLIC_SPEEDTEST_BASE_URL}
     container_name: infinitygo-frontend
     depends_on:
       backend:

@@ -4,6 +4,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,13 +47,31 @@ class AdminSecurityIntegrationTest {
     }
 
     @Test
+    void shouldAllowPublicOoklaSpeedTestExecution() throws Exception {
+        when(diagnosticService.executeSpeedTest(UUID.fromString("9a543e5e-1f57-4920-a9f0-e14d95cf9f0c")))
+            .thenReturn(new com.infinitygo.diagnosticbackend.diagnostic.api.ExecutedSpeedTestResponse(
+                "Ookla CLI / InfinityGO Telecom",
+                "Caldas Novas/GO",
+                new BigDecimal("14.21"),
+                new BigDecimal("1.47"),
+                new BigDecimal("0.00"),
+                new BigDecimal("921.88"),
+                new BigDecimal("468.34")
+            ));
+
+        mockMvc.perform(post("/api/diagnostics/{diagnosticId}/speedtest", UUID.fromString("9a543e5e-1f57-4920-a9f0-e14d95cf9f0c")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.provider").value("Ookla CLI / InfinityGO Telecom"));
+    }
+
+    @Test
     void shouldAllowPublicSpeedTestRecording() throws Exception {
         mockMvc.perform(patch("/api/diagnostics/{diagnosticId}/speedtest", UUID.fromString("9a543e5e-1f57-4920-a9f0-e14d95cf9f0c"))
                 .contentType("application/json")
                 .content("""
                     {
-                      "provider": "cloudflare-worker",
-                      "region": "GRU",
+                      "provider": "Ookla CLI / InfinityGO Telecom",
+                      "region": "Caldas Novas/GO",
                       "latencyMs": 18.4,
                       "jitterMs": 2.1,
                       "packetLossPercent": 0.0,
@@ -86,8 +105,8 @@ class AdminSecurityIntegrationTest {
                 new BigDecimal("0.00"),
                 new BigDecimal("500.25"),
                 new BigDecimal("210.10"),
-                "cloudflare-worker",
-                "GRU"
+                "Ookla CLI / InfinityGO Telecom",
+                "Caldas Novas/GO"
             )));
 
         mockMvc.perform(get("/api/admin/diagnostics").with(httpBasic("admin", "secret123")))

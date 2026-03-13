@@ -53,3 +53,4 @@ fi
 
 printf '\n'
 log_ok "Containers desligados com sucesso."
+log_info "Este script afeta apenas o ambiente Docker. Para o ambiente local sem Docker, use ./stop-project-local-wsl.sh"

@@ -1,36 +1,7 @@
 # Cloudflare Speedtest Worker
 
-Este Worker expõe as rotas usadas pelo frontend para medir conexão sem depender do backend principal:
+Este diretório ficou como referência legada.
 
-- `GET /ping`
-- `GET /download?bytes=1000000`
-- `POST /upload`
+O fluxo principal do projeto não usa mais este Worker. A partir de 2026-03-13, o site executa o speedtest no backend com o Speedtest CLI oficial da Ookla, usando o `server-id` `35474` documentado em `../speedtest.txt`.
 
-## Variáveis opcionais
-
-- `ALLOWED_ORIGIN`: origem permitida para CORS. Exemplo: `https://seu-dominio.com`
-- `MAX_DOWNLOAD_BYTES`: limite máximo do payload de download
-- `MAX_UPLOAD_BYTES`: limite máximo do payload de upload
-
-Os valores atuais de referência no repositório foram ajustados para links mais rápidos:
-
-- `MAX_DOWNLOAD_BYTES=20000000`
-- `MAX_UPLOAD_BYTES=8000000`
-
-## Contrato esperado pelo frontend
-
-As respostas devem incluir os headers:
-
-- `X-Speedtest-Provider`
-- `X-Speedtest-Region`
-
-O frontend atual lê esses headers para salvar no backend:
-
-- provedor da medição
-- região/ponto de medição
-
-## Exemplo de uso no frontend
-
-Defina em `.env`:
-
-`NEXT_PUBLIC_SPEEDTEST_BASE_URL=https://infinitygo-speedtest.smecrowl9.workers.dev`
+Se você decidir reutilizar este Worker no futuro, trate-o como código histórico e revalide o contrato antes de recolocar em produção.

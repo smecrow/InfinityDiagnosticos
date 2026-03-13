@@ -43,6 +43,11 @@ public class DiagnosticController {
         return ResponseEntity.created(location).body(response);
     }
 
+    @PostMapping("/diagnostics/{diagnosticId}/speedtest")
+    public ExecutedSpeedTestResponse executeSpeedTest(@PathVariable UUID diagnosticId) {
+        return diagnosticService.executeSpeedTest(diagnosticId);
+    }
+
     @PatchMapping("/diagnostics/{diagnosticId}/speedtest")
     public ResponseEntity<Void> recordSpeedTest(
         @PathVariable UUID diagnosticId,
