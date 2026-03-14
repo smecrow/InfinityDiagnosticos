@@ -1,5 +1,6 @@
 package com.infinitygo.diagnosticbackend.config;
 
+import jakarta.servlet.DispatcherType;
 import java.util.List;
 import com.infinitygo.diagnosticbackend.diagnostic.service.OoklaSpeedTestProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -15,7 +16,6 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -31,12 +31,12 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .httpBasic(Customizer.withDefaults())
             .authorizeHttpRequests(authorize -> authorize
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/diagnostics").permitAll()
-                .requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.POST, "^/api/diagnostics/[^/]+/speedtest$"))
-                .permitAll()
-                .requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.PATCH, "^/api/diagnostics/[^/]+/speedtest$"))
-                .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/diagnostics/*/speedtest").permitAll()
+                .requestMatchers(HttpMethod.PATCH, "/api/diagnostics/*/speedtest").permitAll()
                 .anyRequest().authenticated()
             )
             .build();

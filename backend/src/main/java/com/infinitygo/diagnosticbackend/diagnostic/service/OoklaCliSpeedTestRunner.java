@@ -67,12 +67,14 @@ public class OoklaCliSpeedTestRunner implements OoklaSpeedTestRunner {
     }
 
     private OoklaSpeedTestResult parseResult(String output) {
+        String jsonOutput = extractJsonPayload(output);
+
         JsonNode root;
         try {
-            root = objectMapper.readTree(output);
+            root = objectMapper.readTree(jsonOutput);
         } catch (java.io.IOException exception) {
             throw new IllegalStateException(
-                "A saída retornada pelo Speedtest CLI da Ookla não veio em JSON válido.",
+                "A saída retornada pelo Speedtest CLI da Ookla não veio em JSON válido: " + summarizeOutput(output),
                 exception
             );
         }
@@ -92,6 +94,22 @@ public class OoklaCliSpeedTestRunner implements OoklaSpeedTestRunner {
             toMbps(downloadBandwidth),
             toMbps(uploadBandwidth)
         );
+    }
+
+    private String extractJsonPayload(String output) {
+        if (output == null || output.isBlank()) {
+            throw new IllegalStateException("O Speedtest CLI da Ookla não retornou conteúdo para análise.");
+        }
+
+        String trimmedOutput = output.trim();
+        int firstJsonBraceIndex = trimmedOutput.indexOf('{');
+        int lastJsonBraceIndex = trimmedOutput.lastIndexOf('}');
+
+        if (firstJsonBraceIndex < 0 || lastJsonBraceIndex < firstJsonBraceIndex) {
+            return trimmedOutput;
+        }
+
+        return trimmedOutput.substring(firstJsonBraceIndex, lastJsonBraceIndex + 1);
     }
 
     private BigDecimal readRequiredDecimal(JsonNode root, String parentField, String childField) {

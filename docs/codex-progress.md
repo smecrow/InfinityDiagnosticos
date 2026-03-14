@@ -2,7 +2,7 @@
 
 - Foi implementado um backend inicial em `Spring Boot` para persistencia de diagnosticos, com modulo isolado em `backend/`.
 - O frontend Next.js agora envia automaticamente o diagnostico coletado para `POST /api/diagnostics`, com fallback de URL via `NEXT_PUBLIC_API_BASE_URL` e feedback visual de persistencia na interface.
-- Foi adicionado um arquivo `.env.example` documentando a URL base esperada da API para o frontend.
+- Foi adicionado um arquivo `frontend/.env.example` documentando a URL base esperada da API para o frontend.
 - O backend agora expoe `POST /api/diagnostics` para ingestao publica, `GET /api/health` para healthcheck e `GET /api/admin/diagnostics` protegido por `Basic Auth`.
 - Foram adicionados testes automatizados para controller, service, repository e seguranca do backend.
 - Foi ajustada a infraestrutura de testes do backend para o ambiente local em `Java 25`, forçando o `Mockito` a usar `mock-maker-subclass`.
@@ -15,8 +15,8 @@
 - Foi verificado que o banco `infinitygodiagnostics` e a role `infinitygo_app` ja existiam no PostgreSQL do Windows.
 - Foi corrigida a conectividade do backend rodando no WSL com o PostgreSQL do Windows, incluindo ajuste da regra do `pg_hba.conf`, criacao de script utilitario para esse setup e alinhamento do `backend/.env` com host e usuario corretos.
 - O projeto foi ajustado para subir frontend e backend nativamente no Windows, sem depender de WSL no launcher principal.
-- Foi criado um launcher dedicado `run-project-windows.bat` para subir backend e frontend nativamente no Windows com um duplo clique.
-- Foi corrigido o quoting do `run-project-windows.bat`, trocando o escape invalido `\"` por aspas duplas compativeis com `cmd.exe` para evitar o erro `The filename, directory name, or volume label syntax is incorrect`.
+- Foi criado um launcher dedicado `start-docker-windows.bat` para subir backend e frontend nativamente no Windows com um duplo clique.
+- Foi corrigido o quoting do `start-docker-windows.bat`, trocando o escape invalido `\"` por aspas duplas compativeis com `cmd.exe` para evitar o erro `The filename, directory name, or volume label syntax is incorrect`.
 - Foi adicionado `Maven Wrapper` ao backend, junto de um `run-backend-dev.cmd` para carregar `backend/.env` e executar o Spring Boot pelo Windows.
 - O script `dev` do frontend foi simplificado para `next dev`, removendo a configuracao especifica de `webpack + polling` usada apenas no WSL.
 - A interface inicial do frontend deixou mais claro quais dados são apenas estimativas do navegador, e os campos visuais `Status online` e `Economia de dados` foram removidos.
@@ -59,8 +59,8 @@
 ### Status atual
 
 - A copia local esta alinhada com `origin/main` no commit `403eeef` apos `git fetch` seguido de `fast-forward` da branch `main`.
-- O projeto agora inclui um fluxo local via Docker com `postgres`, `backend` e `frontend` descrito em `docker-compose.yml` e parametrizado por `.env.docker.example`.
-- A raiz do repositorio tambem documenta o `server-id` confirmado da InfinityGO para o speedtest da Ookla em `speedtest.txt`.
+- O projeto agora inclui um fluxo local via Docker com `postgres`, `backend` e `frontend` descrito em `docker/docker-compose.yml` e parametrizado por `config/env/.env.docker.example`.
+- O repositório também documenta o `server-id` confirmado da InfinityGO para o speedtest da Ookla em `docs/speedtest.txt`.
 - O repositorio agora contem um backend Spring Boot funcional em `backend/`, preparado para evoluir a persistencia e o painel administrativo.
 - O frontend agora fecha o fluxo ponta a ponta localmente, coletando os dados do navegador e tentando persistir o payload real no backend assim que a tela carrega.
 - A interface passou a exibir o estado de persistencia do diagnostico, diferenciando envio em andamento, sucesso e falha de comunicacao com a API.
@@ -88,7 +88,7 @@
 - Os cartoes de dados agora usam labels pequenas em cinza e valores maiores em branco, com maior respiracao no layout.
 - A interface agora usa `Inter`, fundo `#0A0A0A`, cartoes `#171717` sem borda e grid fixo de duas colunas na area de ambiente detectado.
 - O projeto agora pode ser iniciado pelo Windows com um `.bat` que abre duas janelas `cmd`, uma para o backend e outra para o frontend.
-- O repositório agora tambem inclui um launcher Windows com nome explicito para esse fluxo: `run-project-windows.bat`.
+- O repositório agora tambem inclui um launcher Windows com nome explicito para esse fluxo: `start-docker-windows.bat`.
 - O start operacional local agora pode subir frontend e backend em paralelo a partir do mesmo `.bat`, simplificando a validacao manual do fluxo completo.
 - O frontend agora builda corretamente no Windows apos a reinstalacao das dependencias com `npm.cmd install`, gerando os wrappers `.cmd` necessarios em `node_modules/.bin`.
 - A unica pendencia operacional observada na validacao do backend nativo foi porta `8080` ocupada por um processo `wslrelay`, indicando que ainda havia uma instancia antiga encaminhada pelo WSL aberta no Windows.
@@ -110,36 +110,36 @@
 ### Arquivos modificados
 
 - `codex-progress.md`
-- `.env.docker.example`
+- `config/env/.env.docker.example`
 - `.dockerignore`
-- `Dockerfile.frontend`
-- `docker-compose.yml`
+- `docker/frontend.Dockerfile`
+- `docker/docker-compose.yml`
 - `STATUS.md`
-- `speedtest.txt`
-- `stop-project-windows.bat`
-- `.env.example`
+- `docs/speedtest.txt`
+- `scripts/start-docker-windows.bat`
+- `frontend/.env.example`
 - `.gitignore`
-- `diagnostic-data-catalog.md`
-- `architecture-stack.md`
-- `package.json`
-- `package-lock.json`
-- `tsconfig.json`
-- `next-env.d.ts`
-- `next.config.ts`
-- `app/layout.tsx`
-- `app/page.tsx`
-- `app/globals.css`
-- `components/diagnostic-dashboard.tsx`
-- `components/diagnostic-dashboard.module.css`
+- `docs/diagnostic-data-catalog.md`
+- `docs/architecture-stack.md`
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `frontend/tsconfig.json`
+- `frontend/next-env.d.ts`
+- `frontend/next.config.ts`
+- `frontend/app/layout.tsx`
+- `frontend/app/page.tsx`
+- `frontend/app/globals.css`
+- `frontend/components/diagnostic-dashboard.tsx`
+- `frontend/components/diagnostic-dashboard.module.css`
 - `assets/logo-infinity-go.png`
 - `assets/logo-infinity-go.svg`
 - `assets/logo-dark-theme.png`
 - `assets/logo-light-theme.png`
 - `run-next-dev.bat`
-- `run-project-windows.bat`
+- `scripts/start-docker-windows.bat`
 - `backend/.env`
 - `backend/.dockerignore`
-- `backend/Dockerfile`
+- `docker/backend.Dockerfile`
 - `backend/run-backend-dev.cmd`
 - `backend/mvnw`
 - `backend/mvnw.cmd`
@@ -172,13 +172,13 @@
 - `backend/src/test/resources/application-test.properties`
 - `backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`
 - `backend/postman/infinitygo-diagnostic-api.postman_collection.json`
-- `cloudflare-speedtest/worker.js`
-- `cloudflare-speedtest/README.md`
+- `legacy/cloudflare-speedtest/worker.js`
+- `legacy/cloudflare-speedtest/README.md`
 
 ### Próximos passos recomendados
 
-- Validar localmente o fluxo `docker compose up --build` com as variaveis copiadas de `.env.docker.example`, confirmando frontend em `localhost:3000` e backend em `localhost:8080`.
-- Decidir se o `server-id` `35474` documentado em `speedtest.txt` deve permanecer apenas como referencia operacional ou ser fixado no fluxo do site, Worker ou backend.
+- Validar localmente o fluxo `docker compose up --build` com as variaveis copiadas de `config/env/.env.docker.example`, confirmando frontend em `localhost:3000` e backend em `localhost:8080`.
+- Decidir se o `server-id` `35474` documentado em `docs/speedtest.txt` deve permanecer apenas como referencia operacional ou ser fixado no fluxo do site, Worker ou backend.
 - Se desejar testes manuais com ambientes diferentes, criar tambem um arquivo de environment do Postman separado para dev, homologacao e producao.
 - Substituir `ddl-auto: update` por migracoes versionadas antes de subir o backend em ambiente compartilhado.
 - Se for usar banco real, configurar o IntelliJ ou a execucao com `SPRING_PROFILES_ACTIVE=postgres` e as variaveis `DATABASE_URL`, `DATABASE_USERNAME` e `DATABASE_PASSWORD`.

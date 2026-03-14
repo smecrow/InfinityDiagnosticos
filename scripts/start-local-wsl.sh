@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="$PROJECT_DIR/.env.local"
-ENV_EXAMPLE="$PROJECT_DIR/.env.local.example"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+FRONTEND_DIR="$PROJECT_DIR/frontend"
+ENV_FILE="$PROJECT_DIR/config/env/.env.local"
+ENV_EXAMPLE="$PROJECT_DIR/config/env/.env.local.example"
 RUNTIME_DIR="/tmp/infinitygo-local-run"
 BACKEND_PID_FILE="$RUNTIME_DIR/backend.pid"
 FRONTEND_PID_FILE="$RUNTIME_DIR/frontend.pid"
@@ -344,10 +346,10 @@ SQL
 }
 
 install_frontend_dependencies() {
-  if [[ ! -d "$PROJECT_DIR/node_modules" ]] || [[ "$PROJECT_DIR/package-lock.json" -nt "$PROJECT_DIR/node_modules" ]]; then
+  if [[ ! -d "$FRONTEND_DIR/node_modules" ]] || [[ "$FRONTEND_DIR/package-lock.json" -nt "$FRONTEND_DIR/node_modules" ]]; then
     log_info "Instalando dependencias do frontend..."
     (
-      cd "$PROJECT_DIR"
+      cd "$FRONTEND_DIR"
       npm ci
     )
   fi
@@ -513,7 +515,7 @@ remove_stale_pid_file() {
 
   if [[ -n "$pid" ]] && kill -0 "$pid" >/dev/null 2>&1; then
     log_error "Ja existe um processo em execucao para $(basename "$pid_file" .pid)."
-    log_error "Use ./stop-project-local-wsl.sh antes de iniciar novamente."
+    log_error "Use ./scripts/start-local-wsl.sh stop antes de iniciar novamente."
     exit 1
   fi
 
@@ -693,9 +695,11 @@ start_frontend() {
   log_info "Iniciando o frontend local..."
 
   setsid bash -lc "
-    cd \"$PROJECT_DIR\"
+    cd \"$FRONTEND_DIR\"
     export NEXT_TELEMETRY_DISABLED=1
-    exec npm run dev -- --hostname 0.0.0.0 --port 3000
+    export WATCHPACK_POLLING=true
+    export CHOKIDAR_USEPOLLING=1
+    exec npm run dev -- --webpack --hostname 0.0.0.0 --port 3000
   " >"$FRONTEND_LOG_FILE" 2>&1 &
 
   echo "$!" > "$FRONTEND_PID_FILE"
@@ -745,7 +749,7 @@ start_local_stack() {
   log_ok "Backend:  $BACKEND_HEALTH_URL"
   log_ok "Logs do backend:  $BACKEND_LOG_FILE"
   log_ok "Logs do frontend: $FRONTEND_LOG_FILE"
-  log_ok "Para parar frontend e backend: ./run-project-local-wsl.sh"
+  log_ok "Para parar frontend e backend: ./scripts/start-local-wsl.sh stop"
   log_info "Neste modo, o Speedtest CLI roda na sua maquina local. O resultado tende a ficar mais proximo do speedtest do navegador."
   BACKEND_STARTED=0
   FRONTEND_STARTED=0
@@ -807,7 +811,7 @@ main() {
       run_interactive_menu
       ;;
     *)
-      log_error "Uso: ./run-project-local-wsl.sh [start|stop|status]"
+      log_error "Uso: ./scripts/start-local-wsl.sh [start|stop|status]"
       exit 1
       ;;
   esac

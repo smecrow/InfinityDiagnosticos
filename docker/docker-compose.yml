@@ -17,8 +17,8 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
     container_name: infinitygo-backend
     depends_on:
       postgres:
@@ -41,8 +41,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ../frontend
+      dockerfile: ../docker/frontend.Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
     container_name: infinitygo-frontend

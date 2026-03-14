@@ -14,6 +14,7 @@ RUN npm ci
 COPY app ./app
 COPY assets ./assets
 COPY components ./components
+COPY public ./public
 COPY next-env.d.ts ./next-env.d.ts
 COPY next.config.ts ./next.config.ts
 COPY tsconfig.json ./tsconfig.json

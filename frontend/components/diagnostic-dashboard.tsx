@@ -414,10 +414,45 @@ async function executeSpeedTest(diagnosticId: string, signal: AbortSignal): Prom
   });
 
   if (!response.ok) {
-    throw new Error(`Falha ao executar speedtest: ${response.status}`);
+    let errorDetails = "";
+
+    try {
+      const errorPayload = (await response.json()) as { message?: string };
+      const message = errorPayload.message?.trim();
+
+      if (message) {
+        errorDetails = ` - ${message}`;
+      }
+    } catch {
+      errorDetails = "";
+    }
+
+    throw new Error(`Falha ao executar speedtest: ${response.status}${errorDetails}`);
   }
 
   return (await response.json()) as SpeedTestPayload;
+}
+
+function extractHttpStatus(error: Error): number | null {
+  const match = error.message.match(/(\d{3})/);
+
+  if (!match) {
+    return null;
+  }
+
+  return Number.parseInt(match[1], 10);
+}
+
+function extractErrorDetails(error: Error): string | null {
+  const separator = " - ";
+  const separatorIndex = error.message.indexOf(separator);
+
+  if (separatorIndex === -1) {
+    return null;
+  }
+
+  const details = error.message.slice(separatorIndex + separator.length).trim();
+  return details || null;
 }
 
 export default function DiagnosticDashboard() {
@@ -564,9 +599,20 @@ export default function DiagnosticDashboard() {
 
       setSpeedTestState("error");
       if (error instanceof Error && error.message.startsWith("Falha ao executar speedtest")) {
-        setSpeedTestHint(
-          "Não foi possível concluir o speedtest. Verifique se o backend está ativo e se o Speedtest CLI da Ookla está disponível no ambiente."
-        );
+        const httpStatus = extractHttpStatus(error);
+        const errorDetails = extractErrorDetails(error);
+
+        if (httpStatus === 401) {
+          setSpeedTestHint(
+            "Não foi possível concluir o speedtest porque o backend respondeu com 401. Isso indica que o endpoint foi tratado como protegido e precisa aceitar acesso público."
+          );
+        } else if (errorDetails) {
+          setSpeedTestHint(`Não foi possível concluir o speedtest: ${errorDetails}`);
+        } else {
+          setSpeedTestHint(
+            "Não foi possível concluir o speedtest. Verifique se o backend está ativo e se o Speedtest CLI da Ookla está disponível no ambiente."
+          );
+        }
       } else {
         setSpeedTestHint("Não foi possível concluir o speedtest neste momento. Tente novamente em alguns instantes.");
       }
